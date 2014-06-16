@@ -67,7 +67,7 @@ public class RunFarmAssistant extends TestCase {
 
 		List<WebElement> loginButton = driver.findElements(By.className("login_button"));
 		loginButton.get(0).click();
-		System.out.println(loginButton.get(0).getAttribute("onclick"));
+
 		waitForLoad(driver);
 
 		WebDriverWait wait = new WebDriverWait(driver, 15);
