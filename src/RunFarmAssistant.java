@@ -95,6 +95,12 @@ public class RunFarmAssistant extends TestCase {
 
 		System.out.println("toSend = " + lightCavToSend + " Remaining = " + lightCavRemaining);
 
+		List<WebElement> tbody = driver.findElements(By.tagName("tbody"));
+
+		List<WebElement> trList = tbody.get(tbody.size()-1).findElements(By.tagName("tr"));
+
+		List<WebElement reportList = trList.subList(2,trList.size()-1);
+
 		List<WebElement> farmButtons = driver.findElements(By.className("farm_icon_b"));
 		for (int i = 1; i < farmButtons.size(); i++) {
 			// farmButtons.get(i).click();
