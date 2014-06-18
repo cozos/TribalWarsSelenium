@@ -88,9 +88,9 @@ function clickButtons(){
                 if(SMART_SEND_ENABLED){               
                     if(window.localStorage.getItem(coordinates) != null){
                         var oldLandingDate = gayAssDateString(window.localStorage.getItem(coordinates));
-                        console.log("Tentative Landing Date: " + landingDate);
-                        console.log("Landing date in transit: " + oldLandingDate);
-                        console.log("Difference: " + ((landingDate-oldLandingDate)/3600000).toFixed(2) + " hours");
+                        console.log("If you attack now it will land on: " + landingDate);
+                        console.log("Your last attack will land on: " + oldLandingDate);
+                        console.log("Time difference: " + ((landingDate-oldLandingDate)/3600000).toFixed(2) + " hours");
                         if((landingDate - oldLandingDate) >= twoHoursInMilliseconds){
                               console.log("Attack anyways to " + coordinates);
                               simulatedClick(document.getElementsByClassName("farm_icon_b")[i]);
