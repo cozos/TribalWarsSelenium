@@ -27,12 +27,15 @@ public class RunFarmAssistant extends TestCase {
 
 	private static ChromeDriverService service;
 	private WebDriver driver;
+	private static final String WINDOWS32_CHROMEPATH = "chromedriver_win32\\chromedriver.exe";
+	private static final string LINUX64_CHROMEPATH = "chromedriver_linux64/chromedriver";
+	
+
 
 	@BeforeClass
 	public static void createAndStartService() throws IOException {
-		String chromePath = "C:\\Users\\Arwin\\TribalWarsSelenium\\TribalWarsSelenium\\chromedriver_win32\\chromedriver.exe";
 		service = new ChromeDriverService.Builder()
-				.usingDriverExecutable(new File(chromePath)).usingAnyFreePort()
+				.usingDriverExecutable(new File(LINUX64_CHROMEPATH)).usingAnyFreePort()
 				.build();
 		service.start();
 	}
