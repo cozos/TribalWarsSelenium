@@ -104,11 +104,25 @@ public class RunFarmAssistant extends TestCase {
 		
 		for (int i = 0; i < farmButtons.size(); i++) {
 			List<WebElement> tdList = reportList[i].findElements(By.tagName("td"));
-			String innerHTML = reportList[i].getAttribute("innerHTML");
 			Barb farm = new Barb(tdList[3].getAttribute("textContent").substring(2,5),tdList[3].getAttribute("textContent").substring(6,9));
-			System.out.println(farm.x + "@" + farm.y);
 			boolean hasAttacked = tdList[3].findElements(By.tagName("img")).size() != 0;
 			boolean isGreen = tdList[1].findElements(By.tagName("img")).getAttribute("src").indexOf("green.png") != -1;
+			System.out.println(farm.x + "@" + farm.y);
+			
+			if ( isGreen ){
+				// Remove from walled
+			}
+			if( !isGreen){
+				// Add to walled
+			}
+			else if ( hasAttacked){
+				// Check if its not too early to attack
+			}
+			else{
+				long travelTime = Long.parseLong(tdList[7].getAttribute("textContent")) * 8 * 60;
+				farmButtons[i].click();
+				// Record landing time
+			}
 		}
 
 		Thread.sleep(100000);
