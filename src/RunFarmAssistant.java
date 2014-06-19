@@ -104,8 +104,8 @@ public class RunFarmAssistant extends TestCase {
 		
 		assertTrue(farmButtons.size() == reportList.size());
 		
-		for (int i = 1; i < farmButtons.size(); i++) {
-			// farmButtons.get(i).click();
+		for (int i = 0; i < farmButtons.size(); i++) {
+			String innerHTML = reportList[i].getAttribute("innerHTML");
 		}
 
 		Thread.sleep(100000);
