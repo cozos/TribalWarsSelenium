@@ -16,7 +16,7 @@ if((window.location.href.contains("http://en75.tribalwars.net/game.php?village="
 var lightCavToSend = document.getElementsByName("light")[1].value;
 var numLightCav = document.getElementById("light").textContent;
 }
-var twoHoursInMilliseconds = 10000000; // smart send interval time
+var timeDifference = 10000000; // smart send interval time
 var SMART_SEND_ENABLED = true;
 
 function simulatedClick(target, options) {
@@ -91,8 +91,8 @@ function clickButtons(){
                         console.log("If you attack now it will land on: " + landingDate);
                         console.log("Your last attack will land on: " + oldLandingDate);
                         console.log("Time difference: " + ((landingDate-oldLandingDate)/3600000).toFixed(2) + " hours");
-                        console.log("Will send after a difference of: " + (twoHoursInMilliseconds/3600000).toFixed(2) + " hours");
-                        if((landingDate - oldLandingDate) >= twoHoursInMilliseconds){
+                        console.log("Will send after a difference of: " + (timeDifference/3600000).toFixed(2) + " hours");
+                        if((landingDate - oldLandingDate) >= timeDifference){
                               console.log("Attack anyways to " + coordinates);
                               simulatedClick(document.getElementsByClassName("farm_icon_b")[i]);
                               window.localStorage.setItem(coordinates,landingDate);
