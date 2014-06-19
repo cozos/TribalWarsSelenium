@@ -30,8 +30,6 @@ public class RunFarmAssistant extends TestCase {
 	private static final String WINDOWS32_CHROMEPATH = "chromedriver_win32\\chromedriver.exe";
 	private static final string LINUX64_CHROMEPATH = "chromedriver_linux64/chromedriver";
 	
-
-
 	@BeforeClass
 	public static void createAndStartService() throws IOException {
 		service = new ChromeDriverService.Builder()
@@ -105,7 +103,12 @@ public class RunFarmAssistant extends TestCase {
 		assertTrue(farmButtons.size() == reportList.size());
 		
 		for (int i = 0; i < farmButtons.size(); i++) {
+			List<WebElement> tdList = reportList[i].findElements(By.tagName("td"));
 			String innerHTML = reportList[i].getAttribute("innerHTML");
+			Barb farm = new Barb(tdList[3].getAttribute("textContent").substring(2,5),tdList[3].getAttribute("textContent").substring(6,9));
+			System.out.println(farm.x + "@" + farm.y);
+			boolean hasAttacked = tdList[3].findElements(By.tagName("img")).size() != 0;
+			boolean isGreen = tdList[1].findElements(By.tagName("img")).getAttribute("src").indexOf("green.png") != -1;
 		}
 
 		Thread.sleep(100000);
@@ -120,5 +123,22 @@ public class RunFarmAssistant extends TestCase {
 		};
 		WebDriverWait wait = new WebDriverWait(driver, 30);
 		wait.until(pageLoadCondition);
+	}
+	
+	public class Barb{
+		public String x;
+		public String y;
+		public String id;
+		
+		public Barb(String x, String y){
+			this.x = x;
+			this.y = y;
+		}
+		
+		public Barb(String x, String y, String id){
+			this.x = x;
+			this.y = y;
+			this.id = id;
+		}
 	}
 }
