@@ -127,10 +127,10 @@ public class RunFarmAssistant extends TestCase {
 				if ( isGreen ){
 					// Remove from walled
 				}
-				if( !isGreen){
+				if( !isGreen ){
 					// Add to walled
 				}
-				else if ( hasAttacked){
+				else if ( hasAttacked ){
 					// Check if its not too early to attack
 				}
 				else{
