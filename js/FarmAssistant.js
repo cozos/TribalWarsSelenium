@@ -68,7 +68,7 @@ function clickButtons(){
         var landingDate = new Date(curDate.getFullYear(),curDate.getMonth(),curDate.getDate(),curDate.getHours(),curDate.getMinutes(),curDate.getSeconds()+travelTimeInSeconds,curDate.getMilliseconds());
         if(window.localStorage.getItem("WalledBarbs") == null) window.localStorage.setItem("WalledBarbs","Walled Barbs");
         var walledBarbs = window.localStorage.getItem("WalledBarbs");
-        pausecomp((Math.floor((Math.random()*10) + 200)));
+        pausecomp((Math.floor((Math.random()*10) + 250)));
         	console.log(i);
         	if(reports.innerHTML.search("dots/green.png") != -1){
             	var fixedBarb = coordinates + ",";
