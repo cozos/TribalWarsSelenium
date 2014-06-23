@@ -12,7 +12,7 @@ String.prototype.contains = function(string, from){
     return this.indexOf(string, from) >= 0;
 }
 
-if((window.location.href.contains("http://en75.tribalwars.net/game.php?village=") && window.location.href.contains("&order=distance&dir=asc&Farm_page")) || (window.location.href.contains("http://en75.tribalwars.net/game.php?village=") && !window.location.href.contains("&order=distance&dir=asc&Farm_page") && window.location.href.contains("&screen=am_farm"))){
+if((window.location.href.contains("http://en75.tribalwars.net/game.php") && window.location.href.contains("&order=distance&dir=asc&Farm_page")) || (window.location.href.contains("http://en75.tribalwars.net/game.php") && !window.location.href.contains("&order=distance&dir=asc&Farm_page") && window.location.href.contains("&screen=am_farm"))){
 var lightCavToSend = document.getElementsByName("light")[1].value;
 var numLightCav = document.getElementById("light").textContent;
 }
@@ -115,15 +115,16 @@ function clickButtons(){
     }
 }
 
-if(window.location.href.contains("http://en75.tribalwars.net/game.php?village=") && !window.location.href.contains("&order=distance&dir=asc&Farm_page") && window.location.href.contains("&screen=am_farm") && document.getElementById("light").textContent > 2){
+if(window.location.href.contains("http://en75.tribalwars.net/game.php") && !window.location.href.contains("&order=distance&dir=asc&Farm_page") && window.location.href.contains("&screen=am_farm") && document.getElementById("light").textContent > 2){
     if(confirm("Run Script?")){
         clickButtons();
         pausecomp(200);
+        console.log(numLightCav + " " + lightCavToSend);
         if(document.getElementsByClassName("paged-nav-item")[0] != undefined && (parseInt(numLightCav) >= parseInt(lightCavToSend)))simulatedClick(document.getElementsByClassName("paged-nav-item")[0]);
     }
 }
 
-if(window.location.href.contains("http://en75.tribalwars.net/game.php?village=") && window.location.href.contains("&order=distance&dir=asc&Farm_page") && document.getElementById("light").textContent > 2){
+if(window.location.href.contains("http://en75.tribalwars.net/game.php") && window.location.href.contains("&order=distance&dir=asc&Farm_page") && document.getElementById("light").textContent > 2){
     var select = $('select');
 	var page_loc = window.location.href.search("Farm_page")+10;
 	var pageNum = parseInt(window.location.href.substring(page_loc,page_loc+3));
@@ -132,4 +133,3 @@ if(window.location.href.contains("http://en75.tribalwars.net/game.php?village=")
     if(pageNum>5 && select != null) pageNum = 3; // Only if you have 20 pages or higher
 	if(document.getElementsByClassName("paged-nav-item")[pageNum] != undefined && (parseInt(numLightCav) >= parseInt(lightCavToSend)))simulatedClick(document.getElementsByClassName("paged-nav-item")[pageNum]); 
 }
- 
