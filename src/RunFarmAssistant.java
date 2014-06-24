@@ -455,9 +455,11 @@ public class RunFarmAssistant extends TestCase {
         boolean alreadyTried = false;
         while(true)
         {
+            System.out.println("Checking for captchas...");
             WebElement botCheckImage = null; 
             try
             {
+                
                 botCheckImage = driver.findElement(By.id("bot_check_image"));    
                 
                 if(alreadyTried)
@@ -482,10 +484,15 @@ public class RunFarmAssistant extends TestCase {
             }
             catch (NoSuchElementException e)
             {
+                System.out.println("No captchas. Moving along.");
                 return;
             }
             
-            if(botCheckImage == null) return;
+            
+            if(botCheckImage == null){
+                System.out.println("No captchas. Moving along.");
+                return;
+            } 
             
             System.out.println("Found captcha. Attempting to solve...");
             Client captchaClient = (Client)(new SocketClient(CAPTCHA_USERNAME, CAPTCHA_PASSWORD));
