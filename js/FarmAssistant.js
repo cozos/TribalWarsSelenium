@@ -63,7 +63,7 @@ function clickButtons(){
         var reports = document.getElementsByTagName("tbody")[document.getElementsByTagName("tbody").length-1].querySelectorAll(".row_a,.row_b")[i-1];
         var coordinates = reports.cells[3].textContent.substring(2,5) + "@" + reports.cells[3].textContent.substring(6,9);
         var distance = parseFloat(reports.cells[7].textContent);
-        var travelTimeInSeconds = 8*distance*60; // Light Cavalry travels 8minutes/field
+        var travelTimeInSeconds = 10*distance*60; // Light Cavalry travels 10minutes/field
         var curDate = new Date();
         var landingDate = new Date(curDate.getFullYear(),curDate.getMonth(),curDate.getDate(),curDate.getHours(),curDate.getMinutes(),curDate.getSeconds()+travelTimeInSeconds,curDate.getMilliseconds());
         if(window.localStorage.getItem("WalledBarbs") == null) window.localStorage.setItem("WalledBarbs","Walled Barbs");
