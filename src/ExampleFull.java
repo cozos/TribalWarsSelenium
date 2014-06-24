@@ -1,12 +1,9 @@
-import com.DeathByCaptcha.AccessDeniedException;
-import com.DeathByCaptcha.Client;
-import com.DeathByCaptcha.HttpClient;
-import com.DeathByCaptcha.SocketClient;
-import com.DeathByCaptcha.Captcha;
-
-import java.io.IOException;
 import java.util.Iterator;
 import java.util.Vector;
+
+import com.DeathByCaptcha.Captcha;
+import com.DeathByCaptcha.Client;
+import com.DeathByCaptcha.SocketClient;
 
 
 class ExampleFullDecoder implements Runnable

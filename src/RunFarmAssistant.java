@@ -39,9 +39,11 @@ public class RunFarmAssistant extends TestCase {
     private static final String BARB_TRACKER_PATH = "generated/BarbTracker";
     private static final String WALLED_BARBS_PATH = "generated/WalledBarbs";
     private static final String CONFIG_PATH = "Config";
-    private static final String WINDOWS32_CHROMEPATH = "chromedriver_win32\\chromedriver.exe";
-    private static final String LINUX64_CHROMEPATH = "chromedriver_linux64/chromedriver";
     private static final String LINUX32_CHROMEPATH = "chromedriver_linux32/chromedriver";
+    @SuppressWarnings("unused")
+    private static final String WINDOWS32_CHROMEPATH = "chromedriver_win32\\chromedriver.exe";
+    @SuppressWarnings("unused")
+    private static final String LINUX64_CHROMEPATH = "chromedriver_linux64/chromedriver";
     
     private static final long MILLISECONDS_IN_HOUR = 3600000;
 
