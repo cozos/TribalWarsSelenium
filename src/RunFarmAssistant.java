@@ -455,6 +455,7 @@ public class RunFarmAssistant extends TestCase {
         boolean alreadyTried = false;
         while(true)
         {
+            if(alreadyTried) System.out.println("Captcha Solver was wrong. Retrying...");
             System.out.println("Checking for captchas...");
             WebElement botCheckImage = null; 
             try
