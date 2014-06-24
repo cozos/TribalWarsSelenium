@@ -40,11 +40,9 @@ public class RunFarmAssistant extends TestCase {
     private static final String WALLED_BARBS_PATH = "generated/WalledBarbs";
     private static final String CONFIG_PATH = "Config";
     private static final String LINUX32_CHROMEPATH = "chromedriver_linux32/chromedriver";
-    @SuppressWarnings("unused")
-    private static final String WINDOWS32_CHROMEPATH = "chromedriver_win32\\chromedriver.exe";
-    @SuppressWarnings("unused")
-    private static final String LINUX64_CHROMEPATH = "chromedriver_linux64/chromedriver";
-    
+    private static final String CAPTCHA_USERNAME = "SmallJohnson";
+    private static final String CAPTCHA_PASSWORD = "33333";
+
     private static final long MILLISECONDS_IN_HOUR = 3600000;
 
     private static String USERNAME;
@@ -152,6 +150,7 @@ public class RunFarmAssistant extends TestCase {
         FileWriter trackerWriter = null;
         try {
             trackerWriter = new FileWriter(new File(BARB_TRACKER_PATH));
+            if(getTrackedBarbs() == null) throw new NullPointerException();
             trackerWriter.write(getTrackedBarbs().toJSONString());
             trackerWriter.flush();
         } catch (IOException | NullPointerException e) {
@@ -169,6 +168,7 @@ public class RunFarmAssistant extends TestCase {
         FileWriter walledBarbWriter = null;
         try {
             walledBarbWriter = new FileWriter(new File(WALLED_BARBS_PATH));
+            if(getWalledBarbs() == null) throw new NullPointerException();
             walledBarbWriter.write(getWalledBarbs().toJSONString());
             walledBarbWriter.flush();
         } catch (IOException | NullPointerException e) {
@@ -263,6 +263,8 @@ public class RunFarmAssistant extends TestCase {
     }
 
     private void clickButtons() throws InterruptedException, WebDriverException, NullPointerException {
+        checkAndSolveCaptcha();
+        
         int firstPageNum = Integer.parseInt(driver.findElements(By.tagName("Strong")).get(0).getAttribute("textContent").substring(2, 3)) - 1;
         int numPages = driver.findElements(By.className("paged-nav-item")).size();
         boolean select;
@@ -381,38 +383,45 @@ public class RunFarmAssistant extends TestCase {
 
     @Test
     public void farm(){
-        try {
-            TimeZone.setDefault(TimeZone.getTimeZone("GMT+1"));
-            
-            openJSON();
-            
-            driver.get("http://www.tribalwars.net");
-
-            waitForLoad(driver);
-            
-            login();
-
-            wait.until(ExpectedConditions.presenceOfElementLocated(By.className("manager_icon")));
-            
-            checkPromoPopup();
-
-            goToFarmAssistant();
-
-            wait.until(ExpectedConditions.presenceOfElementLocated(By.className("farm_icon_b ")));
-            
-            clickButtons();
-            
-            System.out.println("Done.");
-            
-            Thread.sleep(100000);
-        } 
-        catch (WebDriverException | InterruptedException | IOException | ParseException | NullPointerException e) 
-        {
-            System.out.println("Something fucked up.");
-            System.out.println(e.toString());
-        } 
-        finally{
-            closeJSON();
+        while(true){
+            try {
+                TimeZone.setDefault(TimeZone.getTimeZone("GMT+1"));
+                
+                openJSON();
+                Boolean jsonClosed = false;
+                
+                driver.get("http://www.tribalwars.net");
+    
+                waitForLoad(driver);
+                
+                login();
+    
+                wait.until(ExpectedConditions.presenceOfElementLocated(By.className("manager_icon")));
+                checkAndSolveCaptcha();
+                
+                checkPromoPopup();
+    
+                goToFarmAssistant();
+    
+                wait.until(ExpectedConditions.presenceOfElementLocated(By.className("farm_icon_b ")));
+                
+                clickButtons();
+                
+                System.out.println("Done.");
+                
+                closeJSON();
+                jsonClosed = true;
+                
+                Thread.sleep(HOURS_BETWEEN_FARMING_RUNS);
+            } 
+            catch (WebDriverException | InterruptedException | IOException | ParseException | NullPointerException e) 
+            {
+                System.out.println("Something fucked up.");
+                System.out.println(e.toString());
+            } 
+            finally{
+                if(!jsonClosed) closeJSON();
+            }
         }
     }
 
@@ -440,6 +449,122 @@ public class RunFarmAssistant extends TestCase {
 
     public void setWalledBarbs(JSONObject walledBarbs) {
         this.walledBarbs = walledBarbs;
+    }
+    
+    public void checkAndSolveCaptcha(){
+        boolean alreadyTried = false;
+        while(true)
+        {
+            WebElement botCheckImage = null; 
+            try
+            {
+                botCheckImage = driver.findElement(By.id("bot_check_image"));    
+                
+                if(alreadyTried)
+                {
+                    try 
+                    {
+                        if (client.report(captcha)) 
+                        {
+                            System.out.println("Reported as incorrectly solved");
+                        }
+                        else
+                        {
+                            System.out.println("Failed reporting incorrectly solved CAPTCHA");
+                        }
+                    }
+                    catch (IOException e) 
+                    {
+                        System.out.println("Failed reporting incorrectly solved CAPTCHA: " + e.toString());
+                    }
+                    alreadyTried = false;   
+                }
+            }
+            catch (NoSuchElementException e)
+            {
+                return;
+            }
+            
+            if(botCheckImage == null) return;
+            
+            System.out.println("Found captcha. Attempting to solve...");
+            Client captchaClient = (Client)(new SocketClient(CAPTCHA_USERNAME, CAPTCHA_PASSWORD));
+            captchaClient.isVerbose = true;'
+            
+            try
+            {
+            System.outprintln("Remaining balance for " + CAPTCHA_USERNAME + ": " + client.getBalance() + " US cents");
+            }
+            catch (IOException e) 
+            {
+                System.out.println("Failed fetching balance: " + e.toString());
+                return;
+            }
+            
+            Captcha captcha = null;
+            
+            try 
+            {   
+                String dataUrl = ((JavascriptExecutor) driver).executeScript("var canvas = document.createElement('canvas');
+                                                             var ctx = canvas.getContext('2d');
+                                                             var img = document.getElementById('bot_check_image');
+                                                             ctx.drawImage(img, 20, 20);
+                                                             return canvas.toDataURL();");
+                                                             
+                Set<String> splitDataUrl = dataUrl.trim().split(",");
+                String base64String = splitDataUrl.get(1);
+                
+                byte[] base64Encoding = base64String.getBytes(Charset.forName("UTF-8"));
+                
+                captcha = client.decode(base64Encoding, 120);
+            } 
+            catch (IOException e) 
+            {
+                System.out.println("Failed uploading CAPTCHA");
+                continue;
+                
+            }
+            
+            if (null != captcha) {
+                System.out.println("CAPTCHA " + captcha.id + " solved: " + captcha.text);
+                
+                try
+                {
+                WebElement captchaform = driver.findElement(By.id("bot_check_form"); 
+                WebElement captchaInput = driver.findElement(By.id("bot_check_code"));
+                WebElement captchaSubmit = driver.findElement(By.id("bot_check_submit"));
+                
+                captchaInput.sendKeys(captcha.text);
+                captchaSubmit.submit();
+                alreadyTried = true;
+                Thread.sleep(2000);
+                }
+                catch(NoSuchElementException e)
+                {
+                    try
+                    {
+                    List<WebElement> captchaForm = botCheckImage.findElement(By.xpath(".."))..findElements(By.xpath(".//*"));
+                    WebElement captchaInput = captchaForm.get(1);
+                    WebElement captchaSubmit = captchaForm.get(2);
+                
+                    captchaInput.sendKeys(captcha.text);
+                    captchaSubmit.submit();
+                    alreadyTried = true;
+                    Thread.sleep(2000);
+                    }
+                    catch(Exception e)
+                    {
+                        System.out.println(e.toString());
+                        continue;
+                    }
+                }
+            } 
+            else 
+            {
+                System.out.println("Failed solving CAPTCHA");
+                continue;
+            }
+        }
     }
 
     public class Barb {
