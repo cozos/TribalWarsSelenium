@@ -19,7 +19,6 @@ import org.json.simple.parser.JSONParser;
 import org.json.simple.parser.ParseException;
 import org.junit.After;
 import org.junit.AfterClass;
-import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -51,7 +50,6 @@ public class RunFarmAssistant extends TestCase {
     private static final String GENERATED_DIRECTORY = "generated";
     private static final String BARB_TRACKER_PATH = "generated/BarbTracker";
     private static final String WALLED_BARBS_PATH = "generated/WalledBarbs";
-    private static final String CAPTCHA_LOG_PATH = "generated/CaptchaLog";
     private static final String CONFIG_PATH = "Config";
     private static final String LINUX32_CHROMEPATH = "chromedriver_linux32/chromedriver";
     private static final String CAPTCHA_USERNAME = "SmallJohnson";
@@ -491,8 +489,8 @@ public class RunFarmAssistant extends TestCase {
     
     public void checkAndSolveCaptcha(){
 
-        System.out.println("Checking for captchas...");
-        System.out.println("=========================START: " + Calendar.getInstance().getTime().toString());
+        System.out.println("[CAPTCHA] Checking for captchas...");
+        System.out.println("[CAPTCHA] ===============START: " + Calendar.getInstance().getTime().toString());
 
         boolean alreadyTried = false;
         while(true)
@@ -504,7 +502,7 @@ public class RunFarmAssistant extends TestCase {
             
             WebElement botCheckImage = null; 
             
-            if(alreadyTried) System.out.println("Captcha Solver was wrong. Retrying...");
+            if(alreadyTried) System.out.println("[CAPTCHA] Captcha Solver was wrong. Retrying...");
             
             try
             {
@@ -516,43 +514,43 @@ public class RunFarmAssistant extends TestCase {
                     {
                         if (captchaClient.report(captcha)) 
                         {
-                            System.out.println("Reported as incorrectly solved");
+                            System.out.println("[CAPTCHA] Reported as incorrectly solved");
                         }
                         else
                         {
-                            System.out.println("Failed reporting incorrectly solved CAPTCHA");
+                            System.out.println("[CAPTCHA] Failed reporting incorrectly solved CAPTCHA");
                         }
                     }
                     catch (IOException | com.DeathByCaptcha.Exception e) 
                     {
-                        System.out.println("Failed reporting incorrectly solved CAPTCHA: " + e.toString());
+                        System.out.println("[CAPTCHA] Failed reporting incorrectly solved CAPTCHA: " + e.toString());
                     }
                     alreadyTried = false;   
                 }
             }
             catch (NoSuchElementException e)
             {
-                System.out.println("=========================END: " + Calendar.getInstance().getTime().toString());
-                System.out.println("No captchas. Moving along.");
+                System.out.println("[CAPTCHA]================END: " + Calendar.getInstance().getTime().toString());
+                System.out.println("[CAPTCHA] No captchas. Moving along.");
                 return;
             }
             
             
             if(botCheckImage == null){
-                System.out.println("=========================END: " + Calendar.getInstance().getTime().toString());
-                System.out.println("No captchas. Moving along.");
+                System.out.println("[CAPTCHA]================END: " + Calendar.getInstance().getTime().toString());
+                System.out.println("[CAPTCHA] No captchas. Moving along.");
                 return;
             } 
             
-            System.out.println("Found captcha. Attempting to solve...");
+            System.out.println("[CAPTCHA] Found captcha. Attempting to solve...");
             
             try
             {
-            System.out.println("Remaining balance for " + CAPTCHA_USERNAME + ": " + captchaClient.getBalance() + " US cents");
+            System.out.println("[CAPTCHA] Remaining balance for " + CAPTCHA_USERNAME + ": " + captchaClient.getBalance() + " US cents");
             }
             catch (IOException | com.DeathByCaptcha.Exception e) 
             {
-                System.out.println("Failed fetching balance: " + e.toString());
+                System.out.println("[CAPTCHA] Failed fetching balance. Try again");
                 continue;
             }
             
@@ -570,13 +568,13 @@ public class RunFarmAssistant extends TestCase {
             } 
             catch (IOException | com.DeathByCaptcha.Exception | InterruptedException e) 
             {
-                System.out.println("Failed uploading CAPTCHA");
+                System.out.println("[CAPTCHA] Failed uploading CAPTCHA." + e.toString());
+                System.out.println("[CAPTCHA] Try again.");
                 continue;
-                
             }
             
             if (null != captcha) {
-                System.out.println("CAPTCHA " + captcha.id + " solved: " + captcha.text);
+                System.out.println("[CAPTCHA] CAPTCHA " + captcha.id + " solved: " + captcha.text);
                 
                 try
                 {
@@ -604,14 +602,16 @@ public class RunFarmAssistant extends TestCase {
                     }
                     catch(Exception e1)
                     {
-                        System.out.println(e1.toString());
+                        System.out.println("[CAPTCHA] Failed submitting CAPTCHA " + e1.toString());
+                        System.out.println("[CAPTCHA] Try again.");
                         continue;
                     }
                 }
             } 
             else 
             {
-                System.out.println("Failed solving CAPTCHA");
+                System.out.println("[CAPTCHA] Failed solving CAPTCHA");
+                System.out.println("[CAPTCHA] Try again.");
                 continue;
             }
         }
