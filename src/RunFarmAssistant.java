@@ -433,9 +433,9 @@ public class RunFarmAssistant extends TestCase {
                 System.out.println("[TRY] Clicking buttons..");
                 clickButtons();
                 
-                System.out.println("[SUCCESS] Done.");
-
-                System.out.print("Will run again at " + new Date(HOURS_BETWEEN_FARMING_RUNS + Calendar.getInstance().getTimeInMillis()).toString());
+                System.out.println("[SUCCESS] Sent All LC.");
+               
+                System.out.print("[END] Will run again at " + new Date(HOURS_BETWEEN_FARMING_RUNS + Calendar.getInstance().getTimeInMillis()).toString());
                 System.out.println(" (" + (double)Math.round((double)HOURS_BETWEEN_FARMING_RUNS / MILLISECONDS_IN_HOUR * 100) / 100 + " hours from now)");
                 
                 closeJSON();
