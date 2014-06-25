@@ -3,5 +3,5 @@
 "password": "33333",
 "email": "arwin.tio@hotmail.com"
 "hoursBetweenAttacks": "2"
-"hoursBetweenFarmingRuns": "0.5"
+"hoursBetweenFarmingRuns": "0.25"
 }

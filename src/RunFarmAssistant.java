@@ -1,3 +1,6 @@
+import java.awt.image.BufferedImage;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileReader;
 import java.io.FileWriter;
@@ -6,6 +9,8 @@ import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
 import java.util.TimeZone;
+
+import javax.imageio.ImageIO;
 
 import junit.framework.TestCase;
 
@@ -20,8 +25,12 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 import org.openqa.selenium.By;
+import org.openqa.selenium.Dimension;
 import org.openqa.selenium.JavascriptExecutor;
 import org.openqa.selenium.NoSuchElementException;
+import org.openqa.selenium.OutputType;
+import org.openqa.selenium.Point;
+import org.openqa.selenium.TakesScreenshot;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebDriverException;
 import org.openqa.selenium.WebElement;
@@ -32,12 +41,17 @@ import org.openqa.selenium.support.ui.ExpectedCondition;
 import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.WebDriverWait;
 
+import com.DeathByCaptcha.Captcha;
+import com.DeathByCaptcha.Client;
+import com.DeathByCaptcha.SocketClient;
+
 @RunWith(JUnit4.class)
 public class RunFarmAssistant extends TestCase {
 
     private static final String GENERATED_DIRECTORY = "generated";
     private static final String BARB_TRACKER_PATH = "generated/BarbTracker";
     private static final String WALLED_BARBS_PATH = "generated/WalledBarbs";
+    private static final String CAPTCHA_LOG_PATH = "generated/CaptchaLog";
     private static final String CONFIG_PATH = "Config";
     private static final String LINUX32_CHROMEPATH = "chromedriver_linux32/chromedriver";
     private static final String CAPTCHA_USERNAME = "SmallJohnson";
@@ -70,15 +84,14 @@ public class RunFarmAssistant extends TestCase {
         service.stop();
     }
 
-    @Before
-    public void createDriver() {
-        driver = new RemoteWebDriver(service.getUrl(), DesiredCapabilities.chrome());
-        wait = new WebDriverWait(driver, 15);
-    }
-
     @After
     public void quitDriver() {
         driver.quit();
+    }
+    
+    public void createDriver() {
+        driver = new RemoteWebDriver(service.getUrl(), DesiredCapabilities.chrome());
+        wait = new WebDriverWait(driver, 15);
     }
     
     public static void getUserInfo() {
@@ -203,7 +216,7 @@ public class RunFarmAssistant extends TestCase {
                     / MILLISECONDS_IN_HOUR + " hours");
             System.out.println("___________ OLD ATTACK: " + new Date(oldArrivalTime).toString());
             System.out.println("___________ NEW ATTACK: " + new Date(newArrivalTime).toString());
-            System.out.println("___________ DIFFERENCE: " + (int) (newArrivalTime - oldArrivalTime) / MILLISECONDS_IN_HOUR + " hours.");
+            System.out.println("___________ DIFFERENCE: " + (double) Math.round((double)(newArrivalTime - oldArrivalTime) / MILLISECONDS_IN_HOUR * 100) / 100 + " hours.");
             getTrackedBarbs().put(coordinates, newArrivalTime);
             return true;
         } else {
@@ -211,7 +224,7 @@ public class RunFarmAssistant extends TestCase {
                     / MILLISECONDS_IN_HOUR + " hours");
             System.out.println("___________ OLD ATTACK: " + new Date(oldArrivalTime).toString());
             System.out.println("___________ NEW ATTACK: " + new Date(newArrivalTime).toString());
-            System.out.println("___________ DIFFERENCE: " + (int) (newArrivalTime - oldArrivalTime) / MILLISECONDS_IN_HOUR + " hours.");
+            System.out.println("___________ DIFFERENCE: " + (double) Math.round((double)(newArrivalTime - oldArrivalTime) / MILLISECONDS_IN_HOUR * 100) / 100 + " hours.");
             return false;
         }
     }
@@ -253,7 +266,6 @@ public class RunFarmAssistant extends TestCase {
         }
         catch (WebDriverException e)
         {
-            System.out.println(e.toString());
         }
     }
 
@@ -384,43 +396,69 @@ public class RunFarmAssistant extends TestCase {
     @Test
     public void farm(){
         while(true){
+            Boolean jsonClosed = false;
+            Boolean driverClosed = false;
             try {
                 TimeZone.setDefault(TimeZone.getTimeZone("GMT+1"));
                 
                 openJSON();
-                Boolean jsonClosed = false;
+                jsonClosed = false;
                 
+                System.out.println("[TRY] Opening browser...");
+                createDriver();
                 driver.get("http://www.tribalwars.net");
-    
+                driverClosed = false;
+                System.out.println("[SUCCESS] Opened browser!");
+                
                 waitForLoad(driver);
                 
+                System.out.println("[TRY] Logging in to " + USERNAME + "...");
                 login();
-    
-                wait.until(ExpectedConditions.presenceOfElementLocated(By.className("manager_icon")));
+                System.out.println("[SUCCESS] Logged in!");
+                
                 checkAndSolveCaptcha();
                 
                 checkPromoPopup();
-    
+                
+                wait.until(ExpectedConditions.presenceOfElementLocated(By.className("manager_icon")));
+                
+                System.out.println("[TRY] Going in farm assistant");
                 goToFarmAssistant();
+                System.out.println("[SUCCESS] In farm assistant!");
+                
+                checkAndSolveCaptcha();
     
                 wait.until(ExpectedConditions.presenceOfElementLocated(By.className("farm_icon_b ")));
                 
+                System.out.println("[TRY] Clicking buttons..");
                 clickButtons();
                 
-                System.out.println("Done.");
+                System.out.println("[SUCCESS] Done.");
+
+                System.out.print("Will run again at " + new Date(HOURS_BETWEEN_FARMING_RUNS + Calendar.getInstance().getTimeInMillis()).toString());
+                System.out.println(" (" + (double)Math.round((double)HOURS_BETWEEN_FARMING_RUNS / MILLISECONDS_IN_HOUR * 100) / 100 + " hours from now)");
                 
                 closeJSON();
                 jsonClosed = true;
                 
+                System.out.println("[TRY] Closing browser...");
+                driver.close();
+                driverClosed = true;
+                System.out.println("[SUCCESS] Closed browser!");
+                
                 Thread.sleep(HOURS_BETWEEN_FARMING_RUNS);
             } 
-            catch (WebDriverException | InterruptedException | IOException | ParseException | NullPointerException e) 
+            catch (Exception e ) 
             {
-                System.out.println("Something fucked up.");
+                System.out.println("[FAILED] Something fucked up.");
                 System.out.println(e.toString());
+                System.out.println("[FAILED] Try again");
+                continue;
             } 
             finally{
                 if(!jsonClosed) closeJSON();
+                if(!driverClosed) driver.close();
+                System.out.println("[NEW] Farming Again. Time: " + Calendar.getInstance().getTime().toString());
             }
         }
     }
@@ -452,22 +490,31 @@ public class RunFarmAssistant extends TestCase {
     }
     
     public void checkAndSolveCaptcha(){
+
+        System.out.println("Checking for captchas...");
+        System.out.println("=========================START: " + Calendar.getInstance().getTime().toString());
+
         boolean alreadyTried = false;
         while(true)
         {
-            if(alreadyTried) System.out.println("Captcha Solver was wrong. Retrying...");
-            System.out.println("Checking for captchas...");
+            Captcha captcha = null;
+            
+            Client captchaClient = (Client)(new SocketClient(CAPTCHA_USERNAME, CAPTCHA_PASSWORD));
+            captchaClient.isVerbose = true;
+            
             WebElement botCheckImage = null; 
+            
+            if(alreadyTried) System.out.println("Captcha Solver was wrong. Retrying...");
+            
             try
             {
-                
                 botCheckImage = driver.findElement(By.id("bot_check_image"));    
                 
                 if(alreadyTried)
                 {
                     try 
                     {
-                        if (client.report(captcha)) 
+                        if (captchaClient.report(captcha)) 
                         {
                             System.out.println("Reported as incorrectly solved");
                         }
@@ -476,7 +523,7 @@ public class RunFarmAssistant extends TestCase {
                             System.out.println("Failed reporting incorrectly solved CAPTCHA");
                         }
                     }
-                    catch (IOException e) 
+                    catch (IOException | com.DeathByCaptcha.Exception e) 
                     {
                         System.out.println("Failed reporting incorrectly solved CAPTCHA: " + e.toString());
                     }
@@ -485,48 +532,43 @@ public class RunFarmAssistant extends TestCase {
             }
             catch (NoSuchElementException e)
             {
+                System.out.println("=========================END: " + Calendar.getInstance().getTime().toString());
                 System.out.println("No captchas. Moving along.");
                 return;
             }
             
             
             if(botCheckImage == null){
+                System.out.println("=========================END: " + Calendar.getInstance().getTime().toString());
                 System.out.println("No captchas. Moving along.");
                 return;
             } 
             
             System.out.println("Found captcha. Attempting to solve...");
-            Client captchaClient = (Client)(new SocketClient(CAPTCHA_USERNAME, CAPTCHA_PASSWORD));
-            captchaClient.isVerbose = true;'
             
             try
             {
-            System.outprintln("Remaining balance for " + CAPTCHA_USERNAME + ": " + client.getBalance() + " US cents");
+            System.out.println("Remaining balance for " + CAPTCHA_USERNAME + ": " + captchaClient.getBalance() + " US cents");
             }
-            catch (IOException e) 
+            catch (IOException | com.DeathByCaptcha.Exception e) 
             {
                 System.out.println("Failed fetching balance: " + e.toString());
-                return;
+                continue;
             }
-            
-            Captcha captcha = null;
             
             try 
             {   
-                String dataUrl = ((JavascriptExecutor) driver).executeScript("var canvas = document.createElement('canvas');
-                                                             var ctx = canvas.getContext('2d');
-                                                             var img = document.getElementById('bot_check_image');
-                                                             ctx.drawImage(img, 20, 20);
-                                                             return canvas.toDataURL();");
-                                                             
-                Set<String> splitDataUrl = dataUrl.trim().split(",");
-                String base64String = splitDataUrl.get(1);
-                
-                byte[] base64Encoding = base64String.getBytes(Charset.forName("UTF-8"));
-                
-                captcha = client.decode(base64Encoding, 120);
+                byte[] captchaScreenshot = ((TakesScreenshot) driver).getScreenshotAs(OutputType.BYTES);
+                BufferedImage wholeScreen = ImageIO.read(new ByteArrayInputStream(captchaScreenshot));
+                Dimension captchaDimension = botCheckImage.getSize();
+                Point captchaLocation = botCheckImage.getLocation();
+                BufferedImage captchaImage = wholeScreen.getSubimage(captchaLocation.x, captchaLocation.y, captchaDimension.width,
+                        captchaDimension.height);
+                ByteArrayOutputStream os = new ByteArrayOutputStream();
+                ImageIO.write(captchaImage, "png", os);
+                captcha = captchaClient.decode(new ByteArrayInputStream(os.toByteArray()), 300);
             } 
-            catch (IOException e) 
+            catch (IOException | com.DeathByCaptcha.Exception | InterruptedException e) 
             {
                 System.out.println("Failed uploading CAPTCHA");
                 continue;
@@ -538,7 +580,7 @@ public class RunFarmAssistant extends TestCase {
                 
                 try
                 {
-                WebElement captchaform = driver.findElement(By.id("bot_check_form"); 
+                WebElement captchaform = driver.findElement(By.id("bot_check_form")); 
                 WebElement captchaInput = driver.findElement(By.id("bot_check_code"));
                 WebElement captchaSubmit = driver.findElement(By.id("bot_check_submit"));
                 
@@ -547,11 +589,11 @@ public class RunFarmAssistant extends TestCase {
                 alreadyTried = true;
                 Thread.sleep(2000);
                 }
-                catch(NoSuchElementException e)
+                catch(NoSuchElementException | InterruptedException e)
                 {
                     try
                     {
-                    List<WebElement> captchaForm = botCheckImage.findElement(By.xpath(".."))..findElements(By.xpath(".//*"));
+                    List<WebElement> captchaForm = botCheckImage.findElement(By.xpath("..")).findElements(By.xpath(".//*"));
                     WebElement captchaInput = captchaForm.get(1);
                     WebElement captchaSubmit = captchaForm.get(2);
                 
@@ -560,9 +602,9 @@ public class RunFarmAssistant extends TestCase {
                     alreadyTried = true;
                     Thread.sleep(2000);
                     }
-                    catch(Exception e)
+                    catch(Exception e1)
                     {
-                        System.out.println(e.toString());
+                        System.out.println(e1.toString());
                         continue;
                     }
                 }
