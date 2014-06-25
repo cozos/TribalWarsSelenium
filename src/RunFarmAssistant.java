@@ -212,7 +212,7 @@ public class RunFarmAssistant extends TestCase {
         Long oldArrivalTime = (Long) getTrackedBarbs().get(coordinates);
         if (newArrivalTime - oldArrivalTime > HOURS_BETWEEN_ATTACKS) {
             System.out.println(" ==> ATTACKED. DIFFERENCE IS GREATER THAN WHAT YOU SET: " + (int) HOURS_BETWEEN_ATTACKS
-                    / MILLISECONDS_IN_HOUR + " hours" + ". LC =" + lightCavRemaining + ".");
+                    / MILLISECONDS_IN_HOUR + " hours" + ". LC = " + lightCavRemaining + ".");
             System.out.println("___________ OLD ATTACK: " + new Date(oldArrivalTime).toString());
             System.out.println("___________ NEW ATTACK: " + new Date(newArrivalTime).toString());
             System.out.println("___________ DIFFERENCE: " + (double) Math.round((double)(newArrivalTime - oldArrivalTime) / MILLISECONDS_IN_HOUR * 100) / 100 + " hours.");
@@ -220,7 +220,7 @@ public class RunFarmAssistant extends TestCase {
             return true;
         } else {
             System.out.println(" ==> NOT ATTACKED. DIFFERENCE IS LESS THAN WHAT YOU SET: " + (int) HOURS_BETWEEN_ATTACKS
-                    / MILLISECONDS_IN_HOUR + " hours" + ". LC =" + lightCavRemaining + ".");
+                    / MILLISECONDS_IN_HOUR + " hours" + ". LC = " + lightCavRemaining + ".");
             System.out.println("___________ OLD ATTACK: " + new Date(oldArrivalTime).toString());
             System.out.println("___________ NEW ATTACK: " + new Date(newArrivalTime).toString());
             System.out.println("___________ DIFFERENCE: " + (double) Math.round((double)(newArrivalTime - oldArrivalTime) / MILLISECONDS_IN_HOUR * 100) / 100 + " hours.");
@@ -322,7 +322,7 @@ public class RunFarmAssistant extends TestCase {
                 }
                 if (!isGreen) {
                     addWalledBarb(barb);
-                    System.out.println(" ==> NOT ATTACKED BECAUSE NOT GREEN" + ". LC =" + lightCavRemaining + ".");
+                    System.out.println(" ==> NOT ATTACKED BECAUSE NOT GREEN" + ". LC = " + lightCavRemaining + ".");
                 }
                 else if (hasAttacked) 
                 {
@@ -361,7 +361,7 @@ public class RunFarmAssistant extends TestCase {
                             ((JavascriptExecutor) driver).executeScript("window.scrollBy(0, 30);");
                         }
                     }
-                    System.out.println(" ==> ATTACKED. LANDING DATE IS: " + currentLandingTime.toString() + ". LC =" + lightCavRemaining + ".");
+                    System.out.println(" ==> ATTACKED. LANDING DATE IS: " + currentLandingTime.toString() + ". LC = " + lightCavRemaining + ".");
                     Thread.sleep(225);
 
                     lightCavRemaining -= lightCavToSend;
