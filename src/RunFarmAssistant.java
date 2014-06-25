@@ -44,6 +44,7 @@ import com.DeathByCaptcha.Captcha;
 import com.DeathByCaptcha.Client;
 import com.DeathByCaptcha.SocketClient;
 
+@SuppressWarnings("unused")
 @RunWith(JUnit4.class)
 public class RunFarmAssistant extends TestCase {
 
@@ -201,7 +202,7 @@ public class RunFarmAssistant extends TestCase {
     }
 
     @SuppressWarnings("unchecked")
-    public boolean getAndSetTracker(String coordinates, Long newArrivalTime){
+    public boolean getAndSetTracker(String coordinates, Long newArrivalTime, int lightCavRemaining){
         if(!getTrackedBarbs().containsKey(coordinates))
         {
             System.out.println(" ==> NOT ATTACKED. ALREADY ATTACKED COULD NOT FIND RECORDS.");
@@ -211,7 +212,7 @@ public class RunFarmAssistant extends TestCase {
         Long oldArrivalTime = (Long) getTrackedBarbs().get(coordinates);
         if (newArrivalTime - oldArrivalTime > HOURS_BETWEEN_ATTACKS) {
             System.out.println(" ==> ATTACKED. DIFFERENCE IS GREATER THAN WHAT YOU SET: " + (int) HOURS_BETWEEN_ATTACKS
-                    / MILLISECONDS_IN_HOUR + " hours");
+                    / MILLISECONDS_IN_HOUR + " hours" + ". LC =" + lightCavRemaining + ".");
             System.out.println("___________ OLD ATTACK: " + new Date(oldArrivalTime).toString());
             System.out.println("___________ NEW ATTACK: " + new Date(newArrivalTime).toString());
             System.out.println("___________ DIFFERENCE: " + (double) Math.round((double)(newArrivalTime - oldArrivalTime) / MILLISECONDS_IN_HOUR * 100) / 100 + " hours.");
@@ -219,7 +220,7 @@ public class RunFarmAssistant extends TestCase {
             return true;
         } else {
             System.out.println(" ==> NOT ATTACKED. DIFFERENCE IS LESS THAN WHAT YOU SET: " + (int) HOURS_BETWEEN_ATTACKS
-                    / MILLISECONDS_IN_HOUR + " hours");
+                    / MILLISECONDS_IN_HOUR + " hours" + ". LC =" + lightCavRemaining + ".");
             System.out.println("___________ OLD ATTACK: " + new Date(oldArrivalTime).toString());
             System.out.println("___________ NEW ATTACK: " + new Date(newArrivalTime).toString());
             System.out.println("___________ DIFFERENCE: " + (double) Math.round((double)(newArrivalTime - oldArrivalTime) / MILLISECONDS_IN_HOUR * 100) / 100 + " hours.");
@@ -321,11 +322,11 @@ public class RunFarmAssistant extends TestCase {
                 }
                 if (!isGreen) {
                     addWalledBarb(barb);
-                    System.out.println(" ==> NOT ATTACKED BECAUSE NOT GREEN");
+                    System.out.println(" ==> NOT ATTACKED BECAUSE NOT GREEN" + ". LC =" + lightCavRemaining + ".");
                 }
                 else if (hasAttacked) 
                 {
-                    if(getAndSetTracker(barb, currentLandingTime.getTime()))
+                    if(getAndSetTracker(barb, currentLandingTime.getTime(), lightCavRemaining))
                     {
                         boolean passed = false;
                         while (!passed) 
@@ -360,7 +361,7 @@ public class RunFarmAssistant extends TestCase {
                             ((JavascriptExecutor) driver).executeScript("window.scrollBy(0, 30);");
                         }
                     }
-                    System.out.println(" ==> ATTACKED. LANDING DATE IS: " + currentLandingTime.toString() );
+                    System.out.println(" ==> ATTACKED. LANDING DATE IS: " + currentLandingTime.toString() + ". LC =" + lightCavRemaining + ".");
                     Thread.sleep(225);
 
                     lightCavRemaining -= lightCavToSend;
@@ -501,61 +502,64 @@ public class RunFarmAssistant extends TestCase {
             captchaClient.isVerbose = true;
             
             WebElement botCheckImage = null; 
-            
-            if(alreadyTried) System.out.println("[CAPTCHA] Captcha Solver was wrong. Retrying...");
-            
+           
             try
             {
                 botCheckImage = driver.findElement(By.id("bot_check_image"));    
                 
                 if(alreadyTried)
                 {
+                    System.out.println("[CAPTCHASOLVE] Solved captcha was wrong. Reporting...");
                     try 
                     {
                         if (captchaClient.report(captcha)) 
                         {
-                            System.out.println("[CAPTCHA] Reported as incorrectly solved");
+                            System.out.println("[CAPTCHASOLVE] Reported as incorrectly solved");
                         }
                         else
                         {
-                            System.out.println("[CAPTCHA] Failed reporting incorrectly solved CAPTCHA");
+                            System.out.println("[CAPTCHASOLVE] Failed reporting incorrectly solved CAPTCHA");
                         }
                     }
                     catch (IOException | com.DeathByCaptcha.Exception e) 
                     {
-                        System.out.println("[CAPTCHA] Failed reporting incorrectly solved CAPTCHA: " + e.toString());
+                        System.out.println("[CAPTCHASOLVE] Failed reporting incorrectly solved CAPTCHA: " + e.toString());
                     }
                     alreadyTried = false;   
+                    System.out.println("[CAPTCHASOLVE] Retrying to solve captcha...");
                 }
             }
             catch (NoSuchElementException e)
             {
+                if(alreadyTried) System.out.println("[CAPTCHASOLVE] CAPTCHA was solved.");
                 System.out.println("[CAPTCHA]================END: " + Calendar.getInstance().getTime().toString());
-                System.out.println("[CAPTCHA] No captchas. Moving along.");
+                if(!alreadyTried) System.out.println("[CAPTCHA] No captchas found. Moving along.");
                 return;
             }
             
             
             if(botCheckImage == null){
+                if(alreadyTried) System.out.println("[CAPTCHASOLVE] CAPTCHA was solved.");
                 System.out.println("[CAPTCHA]================END: " + Calendar.getInstance().getTime().toString());
-                System.out.println("[CAPTCHA] No captchas. Moving along.");
+                if(!alreadyTried) System.out.println("[CAPTCHA] No captchas. Moving along.");
                 return;
             } 
             
-            System.out.println("[CAPTCHA] Found captcha. Attempting to solve...");
+            System.out.println("[CAPTCHASOLVE] Found captcha. Attempting to solve...");
             
             try
             {
-            System.out.println("[CAPTCHA] Remaining balance for " + CAPTCHA_USERNAME + ": " + captchaClient.getBalance() + " US cents");
+            System.out.println("[CAPTCHASOLVE] Remaining balance for " + CAPTCHA_USERNAME + ": " + captchaClient.getBalance() + " US cents");
             }
             catch (IOException | com.DeathByCaptcha.Exception e) 
             {
-                System.out.println("[CAPTCHA] Failed fetching balance. Try again");
+                System.out.println("[CAPTCHASOLVE] Failed fetching balance. Try again");
                 continue;
             }
             
             try 
             {   
+                System.out.println("[CAPTCHASOLVE] Trying to upload CAPTCHA...");
                 byte[] captchaScreenshot = ((TakesScreenshot) driver).getScreenshotAs(OutputType.BYTES);
                 BufferedImage wholeScreen = ImageIO.read(new ByteArrayInputStream(captchaScreenshot));
                 Dimension captchaDimension = botCheckImage.getSize();
@@ -565,16 +569,20 @@ public class RunFarmAssistant extends TestCase {
                 ByteArrayOutputStream os = new ByteArrayOutputStream();
                 ImageIO.write(captchaImage, "png", os);
                 captcha = captchaClient.decode(new ByteArrayInputStream(os.toByteArray()), 300);
+                System.out.println("[CAPTCHASOLVE] Captcha upload SUCCESS.");
+                System.out.println("[CAPTCHASOLVE] Trying to solve CAPTCHA...");
             } 
             catch (IOException | com.DeathByCaptcha.Exception | InterruptedException e) 
             {
-                System.out.println("[CAPTCHA] Failed uploading CAPTCHA." + e.toString());
-                System.out.println("[CAPTCHA] Try again.");
+                System.out.println("[CAPTCHASOLVE] Failed uploading CAPTCHA.");
+                System.out.println("[CAPTCHASOLVE] " + e.toString());
+                System.out.println("[CAPTCHASOLVE] Try again.");
                 continue;
             }
             
             if (null != captcha) {
-                System.out.println("[CAPTCHA] CAPTCHA " + captcha.id + " solved: " + captcha.text);
+                System.out.println("[CAPTCHASOLVE] CAPTCHA " + captcha.id + " solved: " + captcha.text);
+                System.out.println("[CAPTCHASOLVE] Trying to submit CAPTCHA...");
                 
                 try
                 {
@@ -586,6 +594,7 @@ public class RunFarmAssistant extends TestCase {
                 captchaSubmit.submit();
                 alreadyTried = true;
                 Thread.sleep(2000);
+                System.out.println("[CAPTCHASOLVE] Captcha Submitted.");
                 }
                 catch(NoSuchElementException | InterruptedException e)
                 {
@@ -599,19 +608,20 @@ public class RunFarmAssistant extends TestCase {
                     captchaSubmit.submit();
                     alreadyTried = true;
                     Thread.sleep(2000);
+                    System.out.println("[CAPTCHASOLVE] Captcha Submitted.");
                     }
                     catch(Exception e1)
                     {
-                        System.out.println("[CAPTCHA] Failed submitting CAPTCHA " + e1.toString());
-                        System.out.println("[CAPTCHA] Try again.");
+                        System.out.println("[CAPTCHASOLVE] Failed submitting CAPTCHA " + e1.toString());
+                        System.out.println("[CAPTCHASOLVE] Try again.");
                         continue;
                     }
                 }
             } 
             else 
             {
-                System.out.println("[CAPTCHA] Failed solving CAPTCHA");
-                System.out.println("[CAPTCHA] Try again.");
+                System.out.println("[CAPTCHASOLVE] Failed solving CAPTCHA");
+                System.out.println("[CAPTCHASOLVE] Try again.");
                 continue;
             }
         }
