@@ -43,6 +43,7 @@ import org.openqa.selenium.support.ui.WebDriverWait;
 import com.DeathByCaptcha.Captcha;
 import com.DeathByCaptcha.Client;
 import com.DeathByCaptcha.SocketClient;
+import com.sun.corba.se.impl.orbutil.ObjectWriter;
 
 @SuppressWarnings("unused")
 @RunWith(JUnit4.class)
@@ -206,13 +207,13 @@ public class RunFarmAssistant extends TestCase {
         if(!getTrackedBarbs().containsKey(coordinates))
         {
             //System.out.println(" ==> NOT ATTACKED. ALREADY ATTACKED COULD NOT FIND RECORDS.");
-            System.out.println("==> NOPE.");
+            //System.out.println("==> NOPE.");
             return false;
         }
 
         Long oldArrivalTime = (Long) getTrackedBarbs().get(coordinates);
         if (newArrivalTime - oldArrivalTime > HOURS_BETWEEN_ATTACKS) {
-            System.out.println("==> ATTACKED. DIFFERENCE: "
+            System.out.println(coordinates + " ==> ATTACKED. DIFFERENCE: "
                     + (double) Math.round((double) (newArrivalTime - oldArrivalTime) / MILLISECONDS_IN_HOUR * 100) / 100
                     + " Hours IS GREATER THAN WHAT YOU SET: " + (int) HOURS_BETWEEN_ATTACKS / MILLISECONDS_IN_HOUR + " Hours" + ". LC = "
                     + (lightCavRemaining-3) + ".");
@@ -226,7 +227,7 @@ public class RunFarmAssistant extends TestCase {
             System.out.println("___________ NEW ATTACK: " + new Date(newArrivalTime).toString());
             System.out.println("___________ DIFFERENCE: " + (double) Math.round((double)(newArrivalTime - oldArrivalTime) / MILLISECONDS_IN_HOUR * 100) / 100 + " hours.");
             */
-            System.out.println("==> NOPE.");
+            //System.out.println("==> NOPE.");
             return false;
         }
     }
@@ -277,7 +278,6 @@ public class RunFarmAssistant extends TestCase {
     }
 
     private void clickButtons() throws InterruptedException, WebDriverException, NullPointerException {
-        checkAndSolveCaptcha();
         
         int firstPageNum = Integer.parseInt(driver.findElements(By.tagName("Strong")).get(0).getAttribute("textContent").substring(2, 3)) - 1;
         int numPages = driver.findElements(By.className("paged-nav-item")).size();
@@ -291,7 +291,9 @@ public class RunFarmAssistant extends TestCase {
             select = false;
         }
 
-        for (int pageNum = firstPageNum; pageNum < numPages; pageNum++) {
+        for (int pageNum = 0; pageNum < numPages+1; pageNum++) {
+            System.out.println("[PAGE] At page: " + ((int)pageNum+1) + ".");
+            checkAndSolveCaptcha();
             List<WebElement> pageNavItems = driver.findElements(By.className("paged-nav-item"));
 
             int lightCavToSend = Integer.parseInt(driver.findElements(By.name("light")).get(1).getAttribute("value"));
@@ -311,7 +313,7 @@ public class RunFarmAssistant extends TestCase {
                 
                 Barb farm = new Barb(tdList.get(3).getAttribute("textContent").substring(2, 5), tdList.get(3).getAttribute("textContent").substring(6, 9));
                 String barb = farm.x + "@" + farm.y;
-                System.out.print(barb + " ");
+                //System.out.print(barb + " ");
                 
                 boolean hasAttacked = tdList.get(3).findElements(By.tagName("img")).size() != 0;
                 boolean isGreen = tdList.get(1).findElements(By.tagName("img")).get(0).getAttribute("src").indexOf("green.png") != -1;
@@ -325,7 +327,7 @@ public class RunFarmAssistant extends TestCase {
                 }
                 if (!isGreen) {
                     addWalledBarb(barb);
-                    System.out.println("==> NOPE.");
+                    //System.out.println("==> NOPE.");
                 }
                 else if (hasAttacked) 
                 {
@@ -365,7 +367,7 @@ public class RunFarmAssistant extends TestCase {
                         }
                     }
                     lightCavRemaining -= lightCavToSend;
-                    System.out.println("==> ATTACKED. LANDING DATE IS: " + currentLandingTime.toString() + ". LC = " + lightCavRemaining + ".");
+                    System.out.println(barb + " ==> ATTACKED. LANDING DATE IS: " + currentLandingTime.toString() + ". LC = " + lightCavRemaining + ".");
                     Thread.sleep(225);
                 }
 
@@ -373,17 +375,18 @@ public class RunFarmAssistant extends TestCase {
                     break;
             }
             
+            // Ran out of LC
             if (lightCavRemaining < lightCavToSend) break;
             
-            boolean passed = false;
+            if (pageNum == numPages) break;
             
+            boolean passed = false;
             while (!passed)
             {
                 try 
                 {
                     if (select && pageNum > 5) pageNavItems.get(3).click();
                     else pageNavItems.get(pageNum).click();
-                    System.out.println("[PAGE] Going to page: " + pageNum+1 + ".");
                     passed = true;
                 } 
                 catch (WebDriverException e) 
@@ -424,7 +427,7 @@ public class RunFarmAssistant extends TestCase {
                 
                 wait.until(ExpectedConditions.presenceOfElementLocated(By.className("manager_icon")));
                 
-                System.out.println("[TRY] Going in farm assistant");
+                System.out.println("[TRY] Going in farm assistant...");
                 goToFarmAssistant();
                 System.out.println("[SUCCESS] In farm assistant!");
                 
@@ -432,7 +435,7 @@ public class RunFarmAssistant extends TestCase {
     
                 wait.until(ExpectedConditions.presenceOfElementLocated(By.className("farm_icon_b ")));
                 
-                System.out.println("[TRY] Clicking buttons..");
+                System.out.println("[TRY] Clicking buttons...");
                 clickButtons();
                 
                 System.out.println("[SUCCESS] Sent All LC.");
@@ -535,7 +538,7 @@ public class RunFarmAssistant extends TestCase {
             catch (NoSuchElementException e)
             {
                 if(alreadyTried) System.out.println("[CAPTCHASOLVE] CAPTCHA was solved.");
-                System.out.println("[CAPTCHA]================END: " + Calendar.getInstance().getTime().toString());
+                System.out.println("[CAPTCHA]================END   : " + Calendar.getInstance().getTime().toString());
                 if(!alreadyTried) System.out.println("[CAPTCHA] No captchas found. Moving along.");
                 return;
             }
@@ -543,7 +546,7 @@ public class RunFarmAssistant extends TestCase {
             
             if(botCheckImage == null){
                 if(alreadyTried) System.out.println("[CAPTCHASOLVE] CAPTCHA was solved.");
-                System.out.println("[CAPTCHA]================END: " + Calendar.getInstance().getTime().toString());
+                System.out.println("[CAPTCHA]================END   : " + Calendar.getInstance().getTime().toString());
                 if(!alreadyTried) System.out.println("[CAPTCHA] No captchas. Moving along.");
                 return;
             } 
@@ -589,6 +592,7 @@ public class RunFarmAssistant extends TestCase {
                 
                 try
                 {
+                System.out.println("[CAPTCHASOLVE] Trying to submit to component captcha...");
                 WebElement captchaform = driver.findElement(By.id("bot_check_form")); 
                 WebElement captchaInput = driver.findElement(By.id("bot_check_code"));
                 WebElement captchaSubmit = driver.findElement(By.id("bot_check_submit"));
@@ -597,27 +601,37 @@ public class RunFarmAssistant extends TestCase {
                 captchaSubmit.submit();
                 alreadyTried = true;
                 Thread.sleep(2000);
-                System.out.println("[CAPTCHASOLVE] Captcha Submitted.");
+                System.out.println("[CAPTCHASOLVE] Component Captcha Submitted.");
                 }
                 catch(NoSuchElementException | InterruptedException e)
                 {
-                    try
+                    System.out.println("[CAPTCHASOLVE] It's not component captcha... ");
+                    System.out.println("[CAPTCHASOLVE] Because exception:");
+                    System.out.println("[CAPTCHASOLVE] EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE");
+                    System.out.println(e.toString());
+                    System.out.println("[CAPTCHASOLVE] EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE");
+                    System.out.println("[CAPTCHASOLVE] Trying fullscreen captcha...");
+                    boolean captchaSubmitted = false;
+                    while(!captchaSubmitted)
                     {
-                    List<WebElement> captchaForm = botCheckImage.findElement(By.xpath("..")).findElements(By.xpath(".//*"));
-                    WebElement captchaInput = captchaForm.get(1);
-                    WebElement captchaSubmit = captchaForm.get(2);
-                
-                    captchaInput.sendKeys(captcha.text);
-                    captchaSubmit.submit();
-                    alreadyTried = true;
-                    Thread.sleep(2000);
-                    System.out.println("[CAPTCHASOLVE] Captcha Submitted.");
-                    }
-                    catch(Exception e1)
-                    {
-                        System.out.println("[CAPTCHASOLVE] Failed submitting CAPTCHA " + e1.toString());
-                        System.out.println("[CAPTCHASOLVE] Try again.");
-                        continue;
+                        try
+                        {                           
+                        List<WebElement> captchaInputs = driver.findElements(By.tagName("input"));
+                        WebElement captchaText = captchaInputs.get(0);
+                        WebElement captchaSubmitButton = captchaInputs.get(1);
+                    
+                        captchaText.sendKeys(captcha.text);
+                        captchaSubmitButton.submit();
+                        Thread.sleep(2000);
+                        System.out.println("[CAPTCHASOLVE] Fullscreen Captcha Submitted.");
+                        alreadyTried = true;
+                        captchaSubmitted = true;
+                        }
+                        catch(Exception e1)
+                        {
+                            System.out.println("[CAPTCHASOLVE] Failed submitting CAPTCHA " + e1.toString());
+                            System.out.println("[CAPTCHASOLVE] Try again.");
+                        }
                     }
                 }
             } 
