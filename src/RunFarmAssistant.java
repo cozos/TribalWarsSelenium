@@ -455,7 +455,7 @@ public class RunFarmAssistant extends TestCase {
                 System.out.print("[END] Will run again at SERVER TIME: " + new Date(HOURS_BETWEEN_FARMING_RUNS + Calendar.getInstance().getTimeInMillis()).toString());
                 System.out.println(" (" + (double)Math.round((double)HOURS_BETWEEN_FARMING_RUNS / MILLISECONDS_IN_HOUR * 100) / 100 + " hours from now)");
                 System.out.println("[REMINDER] EST is 5 hours behind server time.");
-                System.out.println("[REMINDER] Will rerun at LOCAL(EST) TIME: "  + new Date(Calendar.getInstance().getTimeInMillis() - (5*MILLISECONDS_IN_HOUR)).toString());  
+                System.out.println("[REMINDER] Will rerun at LOCAL TIME(EST): "  + new Date(HOURS_BETWEEN_FARMING_RUNS + Calendar.getInstance().getTimeInMillis() - (5*MILLISECONDS_IN_HOUR)).toString());  
                 
                 Thread.sleep(HOURS_BETWEEN_FARMING_RUNS);
             } 
@@ -471,7 +471,7 @@ public class RunFarmAssistant extends TestCase {
                 if(!driverClosed) driver.close();
                 System.out.println("[NEW] Farming Again. SERVER TIME: " + Calendar.getInstance().getTime().toString());
                 System.out.println("[REMINDER] EST is 5 hours behind server time.");
-                System.out.println("[REMINDER] LOCAL(EST) TIME: "  + new Date(Calendar.getInstance().getTimeInMillis() - (5*MILLISECONDS_IN_HOUR)).toString());
+                System.out.println("[REMINDER] LOCAL TIME(EST): "  + new Date(Calendar.getInstance().getTimeInMillis() - (5*MILLISECONDS_IN_HOUR)).toString());
             }
         }
     }
