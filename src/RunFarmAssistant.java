@@ -403,7 +403,7 @@ public class RunFarmAssistant extends TestCase {
 
     @Test
     public void farm(){
-        System.out.println("[START] Welcome to the World Haul Organization(WHO).");
+        System.out.println("[START] RunFarmAssistant bot started.");
         while(true){
             Boolean jsonClosed = false;
             Boolean driverClosed = false;
