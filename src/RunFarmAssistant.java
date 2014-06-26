@@ -298,6 +298,8 @@ public class RunFarmAssistant extends TestCase {
 
             int lightCavToSend = Integer.parseInt(driver.findElements(By.name("light")).get(1).getAttribute("value"));
             int lightCavRemaining = Integer.parseInt(driver.findElement(By.id("light")).getAttribute("textContent"));
+            
+            System.out.println("[INFO] You have " + lightCavRemaining + " LC. Sending " + lightCavToSend + " LC each barb.");
 
             List<WebElement> tbody = driver.findElements(By.tagName("tbody"));
             List<WebElement> trList = tbody.get(tbody.size() - 1).findElements(By.tagName("tr"));
@@ -400,6 +402,7 @@ public class RunFarmAssistant extends TestCase {
 
     @Test
     public void farm(){
+        System.out.println("[START] Welcome to the World Haul Organization(WHO).");
         while(true){
             Boolean jsonClosed = false;
             Boolean driverClosed = false;
@@ -439,10 +442,7 @@ public class RunFarmAssistant extends TestCase {
                 clickButtons();
                 
                 System.out.println("[SUCCESS] Sent All LC.");
-               
-                System.out.print("[END] Will run again at " + new Date(HOURS_BETWEEN_FARMING_RUNS + Calendar.getInstance().getTimeInMillis()).toString());
-                System.out.println(" (" + (double)Math.round((double)HOURS_BETWEEN_FARMING_RUNS / MILLISECONDS_IN_HOUR * 100) / 100 + " hours from now)");
-                
+         
                 closeJSON();
                 jsonClosed = true;
                 
@@ -451,6 +451,10 @@ public class RunFarmAssistant extends TestCase {
                 driverClosed = true;
                 System.out.println("[SUCCESS] Closed browser!");
                 
+                System.out.print("[END] Will run again at " + new Date(HOURS_BETWEEN_FARMING_RUNS + Calendar.getInstance().getTimeInMillis()).toString());
+                System.out.println(" (" + (double)Math.round((double)HOURS_BETWEEN_FARMING_RUNS / MILLISECONDS_IN_HOUR * 100) / 100 + " hours from now)");
+                System.out.println("[REMINDER] EST is 5 hours behind server time. Local Time: "  + new Date(Calendar.getInstance().getTimeInMillis() - (5*MILLISECONDS_IN_HOUR)).toString());
+                     
                 Thread.sleep(HOURS_BETWEEN_FARMING_RUNS);
             } 
             catch (Exception e ) 
@@ -463,7 +467,8 @@ public class RunFarmAssistant extends TestCase {
             finally{
                 if(!jsonClosed) closeJSON();
                 if(!driverClosed) driver.close();
-                System.out.println("[NEW] Farming Again. Time: " + Calendar.getInstance().getTime().toString());
+                System.out.println("[NEW] Farming Again. Server Time: " + Calendar.getInstance().getTime().toString());
+                System.out.println("[REMINDER] EST is 5 hours behind server time. Local Time: "  + new Date(Calendar.getInstance().getTimeInMillis() - (5*MILLISECONDS_IN_HOUR)).toString());
             }
         }
     }
@@ -538,7 +543,7 @@ public class RunFarmAssistant extends TestCase {
             catch (NoSuchElementException e)
             {
                 if(alreadyTried) System.out.println("[CAPTCHASOLVE] CAPTCHA was solved.");
-                System.out.println("[CAPTCHA]================END   : " + Calendar.getInstance().getTime().toString());
+                System.out.println("[CAPTCHA]================END  : " + Calendar.getInstance().getTime().toString());
                 if(!alreadyTried) System.out.println("[CAPTCHA] No captchas found. Moving along.");
                 return;
             }
@@ -546,7 +551,7 @@ public class RunFarmAssistant extends TestCase {
             
             if(botCheckImage == null){
                 if(alreadyTried) System.out.println("[CAPTCHASOLVE] CAPTCHA was solved.");
-                System.out.println("[CAPTCHA]================END   : " + Calendar.getInstance().getTime().toString());
+                System.out.println("[CAPTCHA]================END  : " + Calendar.getInstance().getTime().toString());
                 if(!alreadyTried) System.out.println("[CAPTCHA] No captchas. Moving along.");
                 return;
             } 
