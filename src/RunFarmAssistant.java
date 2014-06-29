@@ -65,6 +65,7 @@ public class RunFarmAssistant extends TestCase {
     private static String PASSWORD;
     private static String EMAIL;
     private static long HOURS_BETWEEN_ATTACKS;
+    private static long HOURS_BETWEEN_ATTACKS_IF_MAX_LOOTED;
     private static long HOURS_BETWEEN_FARMING_RUNS;
 
     private static ChromeDriverService service;
@@ -108,6 +109,7 @@ public class RunFarmAssistant extends TestCase {
             EMAIL = (String) jsonObject.get("email");
             HOURS_BETWEEN_ATTACKS = (long)(Double.parseDouble((String) jsonObject.get("hoursBetweenAttacks")) * MILLISECONDS_IN_HOUR);
             HOURS_BETWEEN_FARMING_RUNS = (long)(Double.parseDouble((String) jsonObject.get("hoursBetweenFarmingRuns")) * MILLISECONDS_IN_HOUR);
+            HOURS_BETWEEN_ATTACKS_IF_MAX_LOOTED = (long)(Double.parseDouble((String) jsonObject.get("hoursBetweenAttacksIfMaxLooted")) * MILLISECONDS_IN_HOUR);
             
         } catch (IOException | ParseException e) {
             System.out.println(e.toString());
@@ -227,21 +229,49 @@ public class RunFarmAssistant extends TestCase {
     }
 
     @SuppressWarnings("unchecked")
-    public boolean getAndSetTracker(String coordinates, Long newArrivalTime, int lightCavRemaining){
+    public boolean getAndSetTracker(String coordinates, Long newArrivalTime, int lightCavRemaining, int lightCavToSend, boolean maxLoot){
         if(!getTrackedBarbs().containsKey(coordinates))
         {
             //System.out.println(" ==> NOT ATTACKED. ALREADY ATTACKED COULD NOT FIND RECORDS.");
             //System.out.println("==> NOPE.");
             return false;
         }
-
-        Long oldArrivalTime = (Long) getTrackedBarbs().get(coordinates);
-        if (newArrivalTime - oldArrivalTime > HOURS_BETWEEN_ATTACKS) {
-            System.out.println(coordinates + " ==> ATTACKED. DIFFERENCE: "
-                    + (double) Math.round((double) (newArrivalTime - oldArrivalTime) / MILLISECONDS_IN_HOUR * 100) / 100
-                    + " Hours IS GREATER THAN WHAT YOU SET: " + (int) HOURS_BETWEEN_ATTACKS / MILLISECONDS_IN_HOUR + " Hours" + ". LC = "
-                    + (lightCavRemaining-3) + ".");
+        
+        Long oldArrivalTime = new Long(0);
+        if(getTrackedBarbs().containsKey(coordinates+"_oldArrivalTime")){
+            oldArrivalTime = (Long) getTrackedBarbs().get(coordinates+"_oldArrivalTime");
+        }
+        
+        Long currentTime = Calendar.getInstance().getTimeInMillis();
+       
+        Long previousNewArrivalTime = (Long) getTrackedBarbs().get(coordinates);
+        
+        // Full Haul Optimization
+        if (maxLoot && (currentTime - oldArrivalTime < HOURS_BETWEEN_ATTACKS_IF_MAX_LOOTED)
+                && (newArrivalTime - previousNewArrivalTime > HOURS_BETWEEN_ATTACKS_IF_MAX_LOOTED)) 
+        {
+            lightCavRemaining -= lightCavToSend;
+            System.out.println(coordinates + " ==> ATTACKED BECAUSE MAX LOOT. DIFFERENCE: "
+                    + (double) Math.round((double) (newArrivalTime - previousNewArrivalTime) / MILLISECONDS_IN_HOUR * 100) / 100
+                    + " Hours IS GREATER THAN WHAT YOU SET WHEN MAX LOOTED: "
+                    + (double) Math.round((double) HOURS_BETWEEN_ATTACKS_IF_MAX_LOOTED / MILLISECONDS_IN_HOUR * 100) / 100
+                    + " Hours. Time of max loot was "
+                    + (double) Math.round((double) (currentTime - oldArrivalTime) / MILLISECONDS_IN_HOUR * 100) / 100
+                    + " hours ago. Remaining LC = " + (lightCavRemaining) + ".");
             getTrackedBarbs().put(coordinates, newArrivalTime);
+            getTrackedBarbs().put(coordinates + "_oldArrivalTime", previousNewArrivalTime);
+            return true;
+        } 
+        else if (newArrivalTime - previousNewArrivalTime > HOURS_BETWEEN_ATTACKS) 
+        {
+            lightCavRemaining -= lightCavToSend;
+            System.out.println(coordinates + " ==> ATTACKED. DIFFERENCE: "
+                    + (double) Math.round((double) (newArrivalTime - previousNewArrivalTime) / MILLISECONDS_IN_HOUR * 100) / 100
+                    + " Hours IS GREATER THAN WHAT YOU SET: "
+                    + (double) Math.round((double) HOURS_BETWEEN_ATTACKS / MILLISECONDS_IN_HOUR * 100) / 100 + " Hours"
+                    + ". LC = " + (lightCavRemaining) + ".");
+            getTrackedBarbs().put(coordinates, newArrivalTime);
+            getTrackedBarbs().put(coordinates + "_oldArrivalTime", previousNewArrivalTime);
             return true;
         } else {
             /*
@@ -342,6 +372,7 @@ public class RunFarmAssistant extends TestCase {
                 //System.out.print(barb + " ");
                 
                 boolean hasAttacked = tdList.get(3).findElements(By.tagName("img")).size() != 0;
+                boolean maxLoot = tdList.get(2).findElements(By.tagName("img")).get(0).getAttribute("src").indexOf("1.png") != -1;
                 boolean isGreen = tdList.get(1).findElements(By.tagName("img")).get(0).getAttribute("src").indexOf("green.png") != -1;
                
                 long travelTime = (long) (Double.parseDouble(tdList.get(7).getAttribute("textContent")) * 10 * 60 * 1000);
@@ -357,7 +388,7 @@ public class RunFarmAssistant extends TestCase {
                 }
                 else if (hasAttacked) 
                 {
-                    if(getAndSetTracker(barb, currentLandingTime.getTime(), lightCavRemaining))
+                    if(getAndSetTracker(barb, currentLandingTime.getTime(), lightCavRemaining,lightCavToSend,maxLoot))
                     {
                         boolean passed = false;
                         while (!passed) 
@@ -396,7 +427,7 @@ public class RunFarmAssistant extends TestCase {
                     System.out.println(barb + " ==> ATTACKED. LANDING DATE IS: " + currentLandingTime.toString() + ". LC = " + lightCavRemaining + ".");
                     Thread.sleep(225);
                 }
-
+                
                 if (lightCavRemaining < lightCavToSend)
                     break;
             }
@@ -529,7 +560,7 @@ public class RunFarmAssistant extends TestCase {
         FileWriter captchaWriter = null;
         try {
             captchaWriter = new FileWriter(new File(CAPTCHA_LOG_PATH),true);
-            captchaWriter.write(logString);
+            captchaWriter.write(logString+"\n");
         } catch (IOException | NullPointerException e) {
             //no-op
         }
@@ -545,22 +576,26 @@ public class RunFarmAssistant extends TestCase {
     public void checkAndSolveCaptcha(){
         System.out.println("[CAPTCHA] Checking for captchas...");
         System.out.println("[CAPTCHA] ===============START: " + Calendar.getInstance().getTime().toString());
-
+        Captcha captcha = null;
+        
         boolean alreadyTried = false;
         while(true)
         {
-            Captcha captcha = null;
-            
             Client captchaClient = (Client)(new SocketClient(CAPTCHA_USERNAME, CAPTCHA_PASSWORD));
             captchaClient.isVerbose = true;
             
             WebElement botCheckImage = null; 
-           
+            Boolean botCheckImageDisplayed = false;
+            
             try
             {
-                botCheckImage = driver.findElement(By.id("bot_check_image"));    
+                botCheckImage = driver.findElement(By.id("bot_check_image"));
+                botCheckImageDisplayed = (Boolean) ((JavascriptExecutor) driver)
+                        .executeScript(
+                                "return arguments[0].complete && arguments[0].naturalWidth != 'undefined' && arguments[0].naturalWidth > 0",
+                                botCheckImage);
                 
-                if(alreadyTried)
+                if(alreadyTried && botCheckImageDisplayed)
                 {
                     captchaLogger("[CAPTCHASOLVE] Solved captcha was wrong. Reporting...");
                     try 
@@ -591,7 +626,7 @@ public class RunFarmAssistant extends TestCase {
             }
             
             
-            if(botCheckImage == null){
+            if(botCheckImage == null || !botCheckImageDisplayed){
                 if(alreadyTried) captchaLogger("[CAPTCHASOLVE] CAPTCHA was solved.");
                 System.out.println("[CAPTCHA]================END  : " + Calendar.getInstance().getTime().toString());
                 if(!alreadyTried) System.out.println("[CAPTCHA] No captchas. Moving along.");
@@ -647,15 +682,14 @@ public class RunFarmAssistant extends TestCase {
                 captchaInput.sendKeys(captcha.text);
                 captchaSubmit.submit();
                 alreadyTried = true;
-                Thread.sleep(2000);
                 captchaLogger("[CAPTCHASOLVE] Component Captcha Submitted.");
                 }
-                catch(NoSuchElementException | InterruptedException e)
+                catch(NoSuchElementException e)
                 {
                     captchaLogger("[CAPTCHASOLVE] It's not component captcha... ");
                     captchaLogger("[CAPTCHASOLVE] Because exception:");
                     captchaLogger("[CAPTCHASOLVE] EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE");
-                    System.out.println(e.toString());
+                    System.out.println("[CAPTCHASOLVE] " + e.toString());
                     captchaLogger("[CAPTCHASOLVE] EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE");
                     captchaLogger("[CAPTCHASOLVE] Trying fullscreen captcha...");
                     boolean captchaSubmitted = false;

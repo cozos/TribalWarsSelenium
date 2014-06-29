@@ -1,0 +1,8 @@
+{
+"username": "ShittyUsername",
+"password": "ShittyPassword",
+"email": "ShittyEmail@ShitWebsite.com"
+"hoursBetweenAttacks": "1.5"
+"hoursBetweenAttacksIfMaxLooted": "0.5"
+"hoursBetweenFarmingRuns": "0.10"
+}
