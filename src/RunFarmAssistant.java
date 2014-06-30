@@ -597,8 +597,8 @@ public class RunFarmAssistant extends TestCase {
                 
                 if(alreadyTried && botCheckImageDisplayed)
                 {
-                    captchaLogger("[CAPTCHASOLVE] Solved captcha was wrong. Reporting...");
-                    try 
+                    captchaLogger("[CAPTCHASOLVE] Solved captcha was wrong.");
+                    /*try 
                     {
                         if (captchaClient.report(captcha)) 
                         {
@@ -612,7 +612,7 @@ public class RunFarmAssistant extends TestCase {
                     catch (IOException | com.DeathByCaptcha.Exception e) 
                     {
                         captchaLogger("[CAPTCHASOLVE] Failed reporting incorrectly solved CAPTCHA: " + e.toString());
-                    }
+                    }*/
                     alreadyTried = false;   
                     captchaLogger("[CAPTCHASOLVE] Retrying to solve captcha...");
                 }
