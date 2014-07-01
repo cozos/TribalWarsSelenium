@@ -247,7 +247,7 @@ public class RunFarmAssistant extends TestCase {
         Long previousNewArrivalTime = (Long) getTrackedBarbs().get(coordinates);
         
         // Full Haul Optimization
-        if (maxLoot && (currentTime - oldArrivalTime < HOURS_BETWEEN_ATTACKS_IF_MAX_LOOTED)
+        if (maxLoot && (currentTime - oldArrivalTime < HOURS_BETWEEN_ATTACKS)
                 && (newArrivalTime - previousNewArrivalTime > HOURS_BETWEEN_ATTACKS_IF_MAX_LOOTED)) 
         {
             lightCavRemaining -= lightCavToSend;
