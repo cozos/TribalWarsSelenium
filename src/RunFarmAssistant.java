@@ -597,6 +597,9 @@ public class RunFarmAssistant extends TestCase {
             try
             {
                 botCheckImage = driver.findElement(By.id("bot_check_image"));
+                
+                // ((JavascriptExecutor) driver).executeScript("var s=document.createElement('script');s.src='http://ajax.googleapis.com/ajax/libs/jquery/1.6.1/jquery.min.js';document.body.appendChild(s);");
+                // $(botCheckImage).is(':visible')
                 botCheckImageDisplayed = (Boolean) ((JavascriptExecutor) driver)
                         .executeScript(
                                 "return arguments[0].complete && arguments[0].naturalWidth != 'undefined' && arguments[0].naturalWidth > 0",
