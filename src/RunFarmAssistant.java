@@ -312,7 +312,17 @@ public class RunFarmAssistant extends TestCase {
         wait.until(ExpectedConditions.presenceOfElementLocated(By.id("active_server")));
 
         WebElement serverButton = driver.findElement(By.id("active_server")).findElements(By.className("clearfix")).get(0).findElements(By.tagName("a")).get(0);
-        serverButton.click();
+        List<WebElement> worldButtonInactive = driver.findElements(By.className("world_button_inactive"));
+        List<WebElement> allWorldButtons = driver.findElements(By.className("world_button_active"));
+        allWorldButtons.addAll(worldButtonInactive);
+        
+        for(WebElement worldButton : allWorldButtons){
+            if(worldButton.getAttribute("textContent").equals("World 75")){
+                worldButton.findElement(By.xpath("..")).click();
+                break;
+            }
+        }
+        
     }
     
     private void checkPromoPopup() {
