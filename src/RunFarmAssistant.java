@@ -310,18 +310,15 @@ public class RunFarmAssistant extends TestCase {
         loginButton.get(0).click();
 
         wait.until(ExpectedConditions.presenceOfElementLocated(By.id("active_server")));
-
-        WebElement serverButton = driver.findElement(By.id("active_server")).findElements(By.className("clearfix")).get(0).findElements(By.tagName("a")).get(0);
-        List<WebElement> worldButtonInactive = driver.findElements(By.className("world_button_inactive"));
-        List<WebElement> allWorldButtons = driver.findElements(By.className("world_button_active"));
-        allWorldButtons.addAll(worldButtonInactive);
         
-        for(WebElement worldButton : allWorldButtons){
+        ((JavascriptExecutor) driver).executeScript("Index.submit_login('server_en75');");
+
+        /*for(WebElement worldButton : allWorldButtons){
             if(worldButton.getAttribute("textContent").equals("World 75")){
-                worldButton.findElement(By.xpath("..")).click();
+                worldButton.findElement(By.xpath("..")).submit();
                 break;
             }
-        }
+        }*/
         
     }
     
