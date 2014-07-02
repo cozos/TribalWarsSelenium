@@ -598,6 +598,8 @@ public class RunFarmAssistant extends TestCase {
             {
                 botCheckImage = driver.findElement(By.id("bot_check_image"));
                 
+                //element.offsetWidth > 0 && element.offsetHeight > 0;
+                
                 // ((JavascriptExecutor) driver).executeScript("var s=document.createElement('script');s.src='http://ajax.googleapis.com/ajax/libs/jquery/1.6.1/jquery.min.js';document.body.appendChild(s);");
                 // $(botCheckImage).is(':visible')
                 botCheckImageDisplayed = (Boolean) ((JavascriptExecutor) driver)
