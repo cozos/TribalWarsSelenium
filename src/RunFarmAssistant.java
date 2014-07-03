@@ -330,16 +330,22 @@ public class RunFarmAssistant extends TestCase {
     }
 
     private void goToFarmAssistant() throws WebDriverException {
-        List<WebElement> villageNames = driver.findElements(By.className("quickedit-label"));
-        
-        System.out.println("[VILLAGE] List of your villages: ");
-        int i = 1;
-        for(WebElement villageName : villageNames){
-            String rawVillageName = villageName.getAttribute("textContent");
-            String processedVillageName = rawVillageName.substring(0,rawVillageName.indexOf("(")).trim();
-            yourVillages.add(processedVillageName);
-            System.out.println("[VILLAGE " + i + "] " + processedVillageName);
-            i++;
+        try{
+            List<WebElement> villageNames = driver.findElements(By.className("quickedit-label"));
+            
+            System.out.println("[VILLAGE] List of your villages: ");
+            int i = 1;
+            for(WebElement villageName : villageNames){
+                String rawVillageName = villageName.getAttribute("textContent");
+                String processedVillageName = rawVillageName.substring(0,rawVillageName.indexOf("(")).trim();
+                yourVillages.add(processedVillageName);
+                System.out.println("[VILLAGE " + i + "] " + processedVillageName);
+                i++;
+            }
+        }
+        catch(NoSuchElementException e){
+            yourVillages.add(driver.findElement(By.id("menu_row2_village")).getAttribute("textContent").trim());
+            System.out.println("[ONLY VILLAGE] " + driver.findElement(By.id("menu_row2_village")).getAttribute("textContent").trim());
         }
         
         WebElement goToFarmAssistant = driver.findElements(By.className("manager_icon")).get(0);
@@ -440,7 +446,12 @@ public class RunFarmAssistant extends TestCase {
                 }
             }
             ((JavascriptExecutor) driver).executeScript("window.scrollTo(0, 0);");
-            driver.findElement(By.id("village_switch_right")).click();
+            try{
+                driver.findElement(By.id("village_switch_right")).click();
+            }
+            catch(NoSuchElementException e){
+                //no-op
+            }
         }
     }
 
