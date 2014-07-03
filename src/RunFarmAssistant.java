@@ -332,7 +332,7 @@ public class RunFarmAssistant extends TestCase {
     private void goToFarmAssistant() throws WebDriverException {
         List<WebElement> villageNames = driver.findElements(By.className("quickedit-label"));
         
-        System.out.println("VILLAGES: ");
+        System.out.println("[VILLAGE] List of your villages: ");
         int i = 1;
         for(WebElement villageName : villageNames){
             String rawVillageName = villageName.getAttribute("textContent");
