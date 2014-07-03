@@ -5,10 +5,12 @@ import java.io.File;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
 import java.util.TimeZone;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 import javax.imageio.ImageIO;
 
@@ -60,7 +62,7 @@ public class RunFarmAssistant extends TestCase {
     private static final String CAPTCHA_PASSWORD = "33333";
 
     private static final long MILLISECONDS_IN_HOUR = 3600000;
-
+    
     private static String USERNAME;
     private static String PASSWORD;
     private static String EMAIL;
@@ -73,6 +75,7 @@ public class RunFarmAssistant extends TestCase {
     private WebDriverWait wait;
     private JSONObject trackedBarbs;
     private JSONObject walledBarbs;
+    private static final List<String> yourVillages = new CopyOnWriteArrayList<String>();
     
     @BeforeClass
     public static void createAndStartService() throws IOException {
@@ -229,7 +232,7 @@ public class RunFarmAssistant extends TestCase {
     }
 
     @SuppressWarnings("unchecked")
-    public boolean getAndSetTracker(String coordinates, Long newArrivalTime, int lightCavRemaining, int lightCavToSend, boolean maxLoot){
+    public boolean getAndSetTracker(String coordinates, Long newArrivalTime, int lightCavRemaining, int lightCavToSend, boolean maxLoot, String village){
         if(!getTrackedBarbs().containsKey(coordinates))
         {
             //System.out.println(" ==> NOT ATTACKED. ALREADY ATTACKED COULD NOT FIND RECORDS.");
@@ -251,7 +254,7 @@ public class RunFarmAssistant extends TestCase {
                 && (newArrivalTime - previousNewArrivalTime > HOURS_BETWEEN_ATTACKS_IF_MAX_LOOTED)) 
         {
             lightCavRemaining -= lightCavToSend;
-            System.out.println(coordinates + " ==> ATTACKED BECAUSE MAX LOOT. DIFFERENCE: "
+            System.out.println(coordinates + " ==> ATTACKED FROM [" + village + "] BECAUSE MAX LOOT. DIFFERENCE: "
                     + (double) Math.round((double) (newArrivalTime - previousNewArrivalTime) / MILLISECONDS_IN_HOUR * 100) / 100
                     + " Hours IS GREATER THAN WHAT YOU SET WHEN MAX LOOTED: "
                     + (double) Math.round((double) HOURS_BETWEEN_ATTACKS_IF_MAX_LOOTED / MILLISECONDS_IN_HOUR * 100) / 100
@@ -265,7 +268,7 @@ public class RunFarmAssistant extends TestCase {
         else if (newArrivalTime - previousNewArrivalTime > HOURS_BETWEEN_ATTACKS) 
         {
             lightCavRemaining -= lightCavToSend;
-            System.out.println(coordinates + " ==> ATTACKED. DIFFERENCE: "
+            System.out.println(coordinates + " ==> ATTACKED FROM [" + village + "]. DIFFERENCE: "
                     + (double) Math.round((double) (newArrivalTime - previousNewArrivalTime) / MILLISECONDS_IN_HOUR * 100) / 100
                     + " Hours IS GREATER THAN WHAT YOU SET: "
                     + (double) Math.round((double) HOURS_BETWEEN_ATTACKS / MILLISECONDS_IN_HOUR * 100) / 100 + " Hours"
@@ -312,13 +315,6 @@ public class RunFarmAssistant extends TestCase {
         wait.until(ExpectedConditions.presenceOfElementLocated(By.id("active_server")));
         
         ((JavascriptExecutor) driver).executeScript("Index.submit_login('server_en75');");
-
-        /*for(WebElement worldButton : allWorldButtons){
-            if(worldButton.getAttribute("textContent").equals("World 75")){
-                worldButton.findElement(By.xpath("..")).submit();
-                break;
-            }
-        }*/
         
     }
     
@@ -334,43 +330,45 @@ public class RunFarmAssistant extends TestCase {
     }
 
     private void goToFarmAssistant() throws WebDriverException {
+        List<WebElement> villageNames = driver.findElements(By.className("quickedit-label"));
+        
+        System.out.println("VILLAGES: ");
+        int i = 1;
+        for(WebElement villageName : villageNames){
+            String rawVillageName = villageName.getAttribute("textContent");
+            String processedVillageName = rawVillageName.substring(0,rawVillageName.indexOf("(")).trim();
+            yourVillages.add(processedVillageName);
+            System.out.println("[VILLAGE " + i + "] " + processedVillageName);
+            i++;
+        }
+        
         WebElement goToFarmAssistant = driver.findElements(By.className("manager_icon")).get(0);
         goToFarmAssistant.click();
     }
-
-    private void clickButtons() throws InterruptedException, WebDriverException, NullPointerException {
-        
-        int firstPageNum = Integer.parseInt(driver.findElements(By.tagName("Strong")).get(0).getAttribute("textContent").substring(2, 3)) - 1;
-        int numPages = driver.findElements(By.className("paged-nav-item")).size();
-        boolean select;
-        
-        try {
-            select = driver.findElement(By.id("select")) != null;
-        } 
-        catch (NoSuchElementException e) 
-        {
-            select = false;
-        }
-
-        for (int pageNum = 0; pageNum < numPages+1; pageNum++) {
-            System.out.println("[PAGE] At page: " + ((int)pageNum+1) + ".");
+    
+    private void clickButtons(int pageNum) throws InterruptedException, WebDriverException, NullPointerException{
+        for(String village : yourVillages){
             checkAndSolveCaptcha();
-            List<WebElement> pageNavItems = driver.findElements(By.className("paged-nav-item"));
-
+            
+            while(!village.equals(driver.findElement(By.id("menu_row2_village")).getAttribute("textContent").trim())){
+                ((JavascriptExecutor) driver).executeScript("window.scrollTo(0, 0);");
+                driver.findElement(By.id("village_switch_right")).click();
+                waitForLoad(driver);
+            }
+            System.out.println("[VILLAGE] Page " + ((int)pageNum+1) + ". DOING VILLAGE: [" + village + "]");
+            
             int lightCavToSend = Integer.parseInt(driver.findElements(By.name("light")).get(1).getAttribute("value"));
             int lightCavRemaining = Integer.parseInt(driver.findElement(By.id("light")).getAttribute("textContent"));
-            
             System.out.println("[INFO] You have " + lightCavRemaining + " LC. Sending " + lightCavToSend + " LC each barb.");
-
+    
             List<WebElement> tbody = driver.findElements(By.tagName("tbody"));
             List<WebElement> trList = tbody.get(tbody.size() - 1).findElements(By.tagName("tr"));
             List<WebElement> reportList = trList.subList(2, trList.size() - 1);
-
+    
             List<WebElement> farmButtons = driver.findElements(By.className("farm_icon_b"));
             farmButtons = farmButtons.subList(1, farmButtons.size());
-
+    
             assertTrue(farmButtons.size() == reportList.size());
-
             for (int i = 0; i < farmButtons.size(); i++) {
                 List<WebElement> tdList = reportList.get(i).findElements(By.tagName("td"));
                 
@@ -385,7 +383,7 @@ public class RunFarmAssistant extends TestCase {
                 long travelTime = (long) (Double.parseDouble(tdList.get(7).getAttribute("textContent")) * 10 * 60 * 1000);
                 Date currentLandingTime = new Date(travelTime + Calendar.getInstance().getTimeInMillis());
                 
-
+    
                 if (isGreen) {
                    removeWalledBarb(barb);
                 }
@@ -395,7 +393,7 @@ public class RunFarmAssistant extends TestCase {
                 }
                 else if (hasAttacked) 
                 {
-                    if(getAndSetTracker(barb, currentLandingTime.getTime(), lightCavRemaining,lightCavToSend,maxLoot))
+                    if(getAndSetTracker(barb, currentLandingTime.getTime(), lightCavRemaining,lightCavToSend,maxLoot,village))
                     {
                         boolean passed = false;
                         while (!passed) 
@@ -431,16 +429,40 @@ public class RunFarmAssistant extends TestCase {
                         }
                     }
                     lightCavRemaining -= lightCavToSend;
-                    System.out.println(barb + " ==> ATTACKED. LANDING DATE IS: " + currentLandingTime.toString() + ". LC = " + lightCavRemaining + ".");
+                    System.out.println(barb + " ==> ATTACKED FROM [" + village + "]. LANDING DATE IS: " + currentLandingTime.toString() + ". LC = " + lightCavRemaining + ".");
                     Thread.sleep(225);
                 }
                 
-                if (lightCavRemaining < lightCavToSend)
+                if (lightCavRemaining < lightCavToSend){
+                    System.out.println("[" + village + "] ran out of LC at page " + ((int)pageNum+1) + ".");
+                    yourVillages.remove(village);
                     break;
+                }
             }
+            ((JavascriptExecutor) driver).executeScript("window.scrollTo(0, 0);");
+            driver.findElement(By.id("village_switch_right")).click();
+        }
+    }
+
+    private void doFarmAssistant() throws InterruptedException, WebDriverException, NullPointerException {
+        
+        int firstPageNum = Integer.parseInt(driver.findElements(By.tagName("Strong")).get(0).getAttribute("textContent").substring(2, 3)) - 1;
+        int numPages = driver.findElements(By.className("paged-nav-item")).size();
+        boolean select;
+        
+        try {
+            select = driver.findElement(By.id("select")) != null;
+        } 
+        catch (NoSuchElementException e) 
+        {
+            select = false;
+        }
+
+        for (int pageNum = 0; pageNum < numPages+1; pageNum++) {
+            System.out.println("[PAGE] At page: " + ((int)pageNum+1) + ".");
+            List<WebElement> pageNavItems = driver.findElements(By.className("paged-nav-item"));
             
-            // Ran out of LC
-            if (lightCavRemaining < lightCavToSend) break;
+            clickButtons(pageNum);
             
             if (pageNum == numPages) break;
             
@@ -448,14 +470,15 @@ public class RunFarmAssistant extends TestCase {
             while (!passed)
             {
                 try 
-                {
+                {   
+                    pageNavItems = driver.findElements(By.className("paged-nav-item"));
                     if (select && pageNum > 5) pageNavItems.get(3).click();
                     else pageNavItems.get(pageNum).click();
                     passed = true;
                 } 
                 catch (WebDriverException e) 
-                {
-                    ((JavascriptExecutor) driver).executeScript("window.scrollBy(0, 30);");
+                {   
+                    ((JavascriptExecutor) driver).executeScript("window.scrollBy(0, 100);");
                 }
             }
             wait.until(ExpectedConditions.presenceOfElementLocated(By.className("farm_icon_b ")));
@@ -501,7 +524,7 @@ public class RunFarmAssistant extends TestCase {
                 wait.until(ExpectedConditions.presenceOfElementLocated(By.className("farm_icon_b ")));
                 
                 System.out.println("[TRY] Clicking buttons...");
-                clickButtons();
+                doFarmAssistant();
                 
                 System.out.println("[SUCCESS] Sent All LC.");
          
@@ -598,13 +621,9 @@ public class RunFarmAssistant extends TestCase {
             {
                 botCheckImage = driver.findElement(By.id("bot_check_image"));
                 
-                //element.offsetWidth > 0 && element.offsetHeight > 0;
-                
-                // ((JavascriptExecutor) driver).executeScript("var s=document.createElement('script');s.src='http://ajax.googleapis.com/ajax/libs/jquery/1.6.1/jquery.min.js';document.body.appendChild(s);");
-                // $(botCheckImage).is(':visible')
                 botCheckImageDisplayed = (Boolean) ((JavascriptExecutor) driver)
                         .executeScript(
-                                "return arguments[0].complete && arguments[0].naturalWidth != 'undefined' && arguments[0].naturalWidth > 0",
+                                "return arguments[0].offsetWidth > 0 &&  arguments[0].offsetHeight > 0",
                                 botCheckImage);
                 
                 if(alreadyTried && botCheckImageDisplayed)
