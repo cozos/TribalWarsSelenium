@@ -235,11 +235,9 @@ public class RunFarmAssistant extends TestCase {
     }
 
     @SuppressWarnings("unchecked")
-    public boolean getAndSetTracker(String coordinates, Long newArrivalTime, int lightCavRemaining, int lightCavToSend, boolean maxLoot, String village){
+    public boolean getAndSetTracker(String coordinates, Long newArrivalTime,boolean maxLoot, String village){
         if(!getTrackedBarbs().containsKey(coordinates))
         {
-            //System.out.println(" ==> NOT ATTACKED. ALREADY ATTACKED COULD NOT FIND RECORDS.");
-            //System.out.println("==> NOPE.");
             return false;
         }
         
@@ -256,38 +254,27 @@ public class RunFarmAssistant extends TestCase {
         if (maxLoot && (currentTime - oldArrivalTime < HOURS_BETWEEN_ATTACKS*2)
                 && (newArrivalTime - previousNewArrivalTime > HOURS_BETWEEN_ATTACKS_IF_MAX_LOOTED)) 
         {
-            lightCavRemaining -= lightCavToSend;
-            System.out.println(coordinates + " ==> ATTACKED FROM [" + village + "] BECAUSE MAX LOOT. DIFFERENCE: "
+            System.out.print(coordinates + " ==> ATTACKED FROM [" + village + "] BECAUSE MAX LOOT. DIFFERENCE: "
                     + (double) Math.round((double) (newArrivalTime - previousNewArrivalTime) / MILLISECONDS_IN_HOUR * 100) / 100
                     + " Hours IS GREATER THAN WHAT YOU SET WHEN MAX LOOTED: "
                     + (double) Math.round((double) HOURS_BETWEEN_ATTACKS_IF_MAX_LOOTED / MILLISECONDS_IN_HOUR * 100) / 100
                     + " Hours. Time of max loot was "
                     + (double) Math.round((double) (currentTime - oldArrivalTime) / MILLISECONDS_IN_HOUR * 100) / 100
-                    + " hours ago. Remaining LC = " + (lightCavRemaining) + ".");
+                    + " hours ago. ");
             getTrackedBarbs().put(coordinates, newArrivalTime);
             getTrackedBarbs().put(coordinates + "_oldArrivalTime", previousNewArrivalTime);
             return true;
         } 
         else if (newArrivalTime - previousNewArrivalTime > HOURS_BETWEEN_ATTACKS) 
         {
-            lightCavRemaining -= lightCavToSend;
-            System.out.println(coordinates + " ==> ATTACKED FROM [" + village + "]. DIFFERENCE: "
+            System.out.print(coordinates + " ==> ATTACKED FROM [" + village + "]. DIFFERENCE: "
                     + (double) Math.round((double) (newArrivalTime - previousNewArrivalTime) / MILLISECONDS_IN_HOUR * 100) / 100
                     + " Hours IS GREATER THAN WHAT YOU SET: "
-                    + (double) Math.round((double) HOURS_BETWEEN_ATTACKS / MILLISECONDS_IN_HOUR * 100) / 100 + " Hours"
-                    + ". LC = " + (lightCavRemaining) + ".");
+                    + (double) Math.round((double) HOURS_BETWEEN_ATTACKS / MILLISECONDS_IN_HOUR * 100) / 100 + " Hours. ");
             getTrackedBarbs().put(coordinates, newArrivalTime);
             getTrackedBarbs().put(coordinates + "_oldArrivalTime", previousNewArrivalTime);
             return true;
         } else {
-            /*
-            System.out.println(" ==> NOT ATTACKED. DIFFERENCE IS LESS THAN WHAT YOU SET: " + (int) HOURS_BETWEEN_ATTACKS
-                    / MILLISECONDS_IN_HOUR + " hours" + ". LC = " + lightCavRemaining + ".");
-            System.out.println("___________ OLD ATTACK: " + new Date(oldArrivalTime).toString());
-            System.out.println("___________ NEW ATTACK: " + new Date(newArrivalTime).toString());
-            System.out.println("___________ DIFFERENCE: " + (double) Math.round((double)(newArrivalTime - oldArrivalTime) / MILLISECONDS_IN_HOUR * 100) / 100 + " hours.");
-            */
-            //System.out.println("==> NOPE.");
             return false;
         }
     }
@@ -397,7 +384,8 @@ public class RunFarmAssistant extends TestCase {
             int heavyCavRemaining = Integer.parseInt(driver.findElement(By.id("heavy")).getAttribute("textContent"));
             
             System.out.println("[INFO] You have " + lightCavRemaining + " LC. Sending " + lightCavToSend + " LC each barb.");
-    
+            System.out.println("[INFO] You have " + heavyCavRemaining + " HC. Sending " + heavyCavToSend + " HC each barb.");
+            
             List<WebElement> tbody = driver.findElements(By.tagName("tbody"));
             List<WebElement> trList = tbody.get(tbody.size() - 1).findElements(By.tagName("tr"));
             List<WebElement> reportList = trList.subList(2, trList.size() - 1);
@@ -419,11 +407,14 @@ public class RunFarmAssistant extends TestCase {
                 boolean hasAttacked = tdList.get(3).findElements(By.tagName("img")).size() != 0;
                 boolean maxLoot = tdList.get(2).findElements(By.tagName("img")).get(0).getAttribute("src").indexOf("1.png") != -1;
                 boolean isGreen = tdList.get(1).findElements(By.tagName("img")).get(0).getAttribute("src").indexOf("green.png") != -1;
-               
+                boolean hcMode = lightCavRemaining < yourVillageSettings.get(village).lcToKeep + lightCavToSend;
+                
                 long travelTime = (long) (Double.parseDouble(tdList.get(7).getAttribute("textContent")) * 10 * 60 * 1000);
                 long heavyTravelTime = (long) (Double.parseDouble(tdList.get(7).getAttribute("textContent")) * 11 * 60 * 1000);
                 Date currentLandingTime = new Date(travelTime + Calendar.getInstance().getTimeInMillis());
                 Date heavyCurrentLandingTime = new Date(heavyTravelTime + Calendar.getInstance().getTimeInMillis());
+                
+                if(hcMode) currentLandingTime = heavyCurrentLandingTime;
                 
                 if (isGreen) {
                    removeWalledBarb(barb);
@@ -434,14 +425,20 @@ public class RunFarmAssistant extends TestCase {
                 }
                 else if (hasAttacked) 
                 {
-                    if(getAndSetTracker(barb, currentLandingTime.getTime(), lightCavRemaining,lightCavToSend,maxLoot,village))
+                    if(getAndSetTracker(barb, currentLandingTime.getTime(), maxLoot,village))
                     {
                         boolean passed = false;
                         while (!passed) 
                         {
                             try 
-                            {
-                                farmButtons.get(i).click();
+                            {   if(!hcMode)
+                                {
+                                    farmButtons.get(i).click();
+                                }
+                                else
+                                {
+                                    heavyFarmButtons.get(i).click();
+                                }
                                 passed = true;
                             } 
                             catch (WebDriverException e) 
@@ -449,8 +446,17 @@ public class RunFarmAssistant extends TestCase {
                                 ((JavascriptExecutor) driver).executeScript("window.scrollBy(0, 30);");
                             }
                         }
+                        if(!hcMode)
+                        {
+                            lightCavRemaining -= lightCavToSend;
+                            System.out.println("Remaining LC: " + lightCavRemaining);
+                        }
+                        else
+                        {
+                            heavyCavRemaining -= heavyCavToSend;
+                            System.out.println("Remaining HC: " + heavyCavRemaining);
+                        }
                         Thread.sleep(225);
-                        lightCavRemaining -= lightCavToSend;
                     }
                 } 
                 else 
@@ -461,7 +467,14 @@ public class RunFarmAssistant extends TestCase {
                     {
                         try 
                         {
-                            farmButtons.get(i).click();
+                            if (!hcMode)
+                            {
+                                farmButtons.get(i).click();
+                            }
+                            else
+                            {
+                                heavyFarmButtons.get(i).click();
+                            }
                             passed = true;
                         } 
                         catch (WebDriverException e) 
@@ -469,12 +482,22 @@ public class RunFarmAssistant extends TestCase {
                             ((JavascriptExecutor) driver).executeScript("window.scrollBy(0, 30);");
                         }
                     }
-                    lightCavRemaining -= lightCavToSend;
-                    System.out.println(barb + " ==> ATTACKED FROM [" + village + "]. LANDING DATE IS: " + currentLandingTime.toString() + ". LC = " + lightCavRemaining + ".");
+                    if (!hcMode)
+                    {
+                        lightCavRemaining -= lightCavToSend;
+                        System.out.println(barb + " ==> SENT LC FROM [" + village + "]. LANDING DATE IS: " + currentLandingTime.toString() + ". LC = " + lightCavRemaining + ".");
+                    }
+                    else
+                    {
+                        heavyCavRemaining -= heavyCavToSend;
+                        System.out.println(barb + " ==> SENT HC FROM [" + village + "]. LANDING DATE IS: " + currentLandingTime.toString() + ". HC = " + heavyCavRemaining + ".");
+                   
+                    }
                     Thread.sleep(225);
                 }
                 
-                if (lightCavRemaining < yourVillageSettings.get(village).lcToKeep + lightCavToSend){
+                if (lightCavRemaining < yourVillageSettings.get(village).lcToKeep + lightCavToSend &&
+                        heavyCavRemaining < yourVillageSettings.get(village).hcToKeep + heavyCavToSend ){
                     System.out.println("[" + village + "] ran out of Cavalry at page " + ((int)pageNum+1) + ". " + lightCavRemaining + " LC remaining.");
                     yourVillages.remove(village);
                     break;
