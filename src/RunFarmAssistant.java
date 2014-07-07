@@ -8,7 +8,9 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.TimeZone;
 import java.util.concurrent.CopyOnWriteArrayList;
 
@@ -76,6 +78,7 @@ public class RunFarmAssistant extends TestCase {
     private JSONObject trackedBarbs;
     private JSONObject walledBarbs;
     private static final List<String> yourVillages = new CopyOnWriteArrayList<String>();
+    private static final Map<String,VillageSettings> yourVillageSettings = new HashMap<String,VillageSettings>();
     
     @BeforeClass
     public static void createAndStartService() throws IOException {
@@ -250,7 +253,7 @@ public class RunFarmAssistant extends TestCase {
         Long previousNewArrivalTime = (Long) getTrackedBarbs().get(coordinates);
         
         // Full Haul Optimization
-        if (maxLoot && (currentTime - oldArrivalTime < HOURS_BETWEEN_ATTACKS)
+        if (maxLoot && (currentTime - oldArrivalTime < HOURS_BETWEEN_ATTACKS*2)
                 && (newArrivalTime - previousNewArrivalTime > HOURS_BETWEEN_ATTACKS_IF_MAX_LOOTED)) 
         {
             lightCavRemaining -= lightCavToSend;
@@ -318,6 +321,27 @@ public class RunFarmAssistant extends TestCase {
         
     }
     
+    private void getSettings() throws ParseException {
+        WebElement villageLink = driver.findElement(By.id("menu_row2_village")).findElements(By.tagName("a")).get(0);
+
+        villageLink.click();
+
+        wait.until(ExpectedConditions.presenceOfElementLocated(By.id("village_note")));
+        WebElement note = driver.findElement(By.id("village_note"));
+
+        String jsonString = note.getAttribute("textContent");
+        JSONObject jsonSettings = (JSONObject) new JSONParser().parse(jsonString);
+
+        for (int i = 0; i < yourVillages.size(); i++) {
+            int villageNum = i + 1;
+            VillageSettings settings = new VillageSettings(Integer.parseInt((String) jsonSettings.get(villageNum + "LC")),
+                    Integer.parseInt((String) jsonSettings.get(villageNum + "HC")));
+            System.out.println("[SETTINGS] LC TO KEEP: " + jsonSettings.get(villageNum + "LC") + ", HC TO KEEP:"
+                    + jsonSettings.get(villageNum + "HC") + " in [" + yourVillages.get(i) + "]");
+            yourVillageSettings.put(yourVillages.get(i), settings);
+        }
+    }
+    
     private void checkPromoPopup() {
         try
         {
@@ -329,7 +353,7 @@ public class RunFarmAssistant extends TestCase {
         }
     }
 
-    private void goToFarmAssistant() throws WebDriverException {
+    private void goToFarmAssistant() throws WebDriverException, ParseException {
         try{
             List<WebElement> villageNames = driver.findElements(By.className("quickedit-label"));
             
@@ -342,11 +366,14 @@ public class RunFarmAssistant extends TestCase {
                 System.out.println("[VILLAGE " + i + "] " + processedVillageName);
                 i++;
             }
+            //yourVillages.remove("1. Rectal Rummager Rocko");
         }
         catch(NoSuchElementException e){
             yourVillages.add(driver.findElement(By.id("menu_row2_village")).getAttribute("textContent").trim());
             System.out.println("[ONLY VILLAGE] " + driver.findElement(By.id("menu_row2_village")).getAttribute("textContent").trim());
         }
+        
+        getSettings();
         
         WebElement goToFarmAssistant = driver.findElements(By.className("manager_icon")).get(0);
         goToFarmAssistant.click();
@@ -365,6 +392,10 @@ public class RunFarmAssistant extends TestCase {
             
             int lightCavToSend = Integer.parseInt(driver.findElements(By.name("light")).get(1).getAttribute("value"));
             int lightCavRemaining = Integer.parseInt(driver.findElement(By.id("light")).getAttribute("textContent"));
+            
+            int heavyCavToSend = Integer.parseInt(driver.findElements(By.name("heavy")).get(0).getAttribute("value"));
+            int heavyCavRemaining = Integer.parseInt(driver.findElement(By.id("heavy")).getAttribute("textContent"));
+            
             System.out.println("[INFO] You have " + lightCavRemaining + " LC. Sending " + lightCavToSend + " LC each barb.");
     
             List<WebElement> tbody = driver.findElements(By.tagName("tbody"));
@@ -373,6 +404,9 @@ public class RunFarmAssistant extends TestCase {
     
             List<WebElement> farmButtons = driver.findElements(By.className("farm_icon_b"));
             farmButtons = farmButtons.subList(1, farmButtons.size());
+            
+            List<WebElement> heavyFarmButtons = driver.findElements(By.className("farm_icon_a"));
+            heavyFarmButtons = heavyFarmButtons.subList(1, heavyFarmButtons.size());
     
             assertTrue(farmButtons.size() == reportList.size());
             for (int i = 0; i < farmButtons.size(); i++) {
@@ -387,9 +421,10 @@ public class RunFarmAssistant extends TestCase {
                 boolean isGreen = tdList.get(1).findElements(By.tagName("img")).get(0).getAttribute("src").indexOf("green.png") != -1;
                
                 long travelTime = (long) (Double.parseDouble(tdList.get(7).getAttribute("textContent")) * 10 * 60 * 1000);
+                long heavyTravelTime = (long) (Double.parseDouble(tdList.get(7).getAttribute("textContent")) * 11 * 60 * 1000);
                 Date currentLandingTime = new Date(travelTime + Calendar.getInstance().getTimeInMillis());
+                Date heavyCurrentLandingTime = new Date(heavyTravelTime + Calendar.getInstance().getTimeInMillis());
                 
-    
                 if (isGreen) {
                    removeWalledBarb(barb);
                 }
@@ -439,8 +474,8 @@ public class RunFarmAssistant extends TestCase {
                     Thread.sleep(225);
                 }
                 
-                if (lightCavRemaining < lightCavToSend){
-                    System.out.println("[" + village + "] ran out of LC at page " + ((int)pageNum+1) + ".");
+                if (lightCavRemaining < yourVillageSettings.get(village).lcToKeep + lightCavToSend){
+                    System.out.println("[" + village + "] ran out of Cavalry at page " + ((int)pageNum+1) + ". " + lightCavRemaining + " LC remaining.");
                     yourVillages.remove(village);
                     break;
                 }
@@ -475,7 +510,7 @@ public class RunFarmAssistant extends TestCase {
             
             clickButtons(pageNum);
             
-            if (pageNum == numPages) break;
+            if (pageNum == numPages || yourVillages.isEmpty()) break;
             
             boolean passed = false;
             while (!passed)
@@ -524,6 +559,8 @@ public class RunFarmAssistant extends TestCase {
                 
                 checkPromoPopup();
                 
+                checkAndSolveCaptcha();
+   
                 wait.until(ExpectedConditions.presenceOfElementLocated(By.className("manager_icon")));
                 
                 System.out.println("[TRY] Going in farm assistant...");
@@ -564,6 +601,8 @@ public class RunFarmAssistant extends TestCase {
             finally{
                 if(!jsonClosed) closeJSON();
                 if(!driverClosed) driver.close();
+                yourVillages.clear();
+                yourVillageSettings.clear();
                 System.out.println("[NEW] Farming Again. SERVER TIME: " + Calendar.getInstance().getTime().toString());
                 System.out.println("[REMINDER] EST is 5 hours behind server time.");
                 System.out.println("[REMINDER] LOCAL TIME(EST): "  + new Date(Calendar.getInstance().getTimeInMillis() - (5*MILLISECONDS_IN_HOUR)).toString());
@@ -640,7 +679,7 @@ public class RunFarmAssistant extends TestCase {
                 if(alreadyTried && botCheckImageDisplayed)
                 {
                     captchaLogger("[CAPTCHASOLVE] Solved captcha was wrong.");
-                    /*try 
+                    try 
                     {
                         if (captchaClient.report(captcha)) 
                         {
@@ -654,7 +693,7 @@ public class RunFarmAssistant extends TestCase {
                     catch (IOException | com.DeathByCaptcha.Exception e) 
                     {
                         captchaLogger("[CAPTCHASOLVE] Failed reporting incorrectly solved CAPTCHA: " + e.toString());
-                    }*/
+                    }
                     alreadyTried = false;   
                     captchaLogger("[CAPTCHASOLVE] Retrying to solve captcha...");
                 }
@@ -781,6 +820,16 @@ public class RunFarmAssistant extends TestCase {
             this.x = x;
             this.y = y;
             this.id = id;
+        }
+    }
+    
+    public class VillageSettings {
+        public int lcToKeep;
+        public int hcToKeep;
+
+        public VillageSettings(int lcToKeep, int hcToKeep){
+            this.lcToKeep = lcToKeep;
+            this.hcToKeep = hcToKeep;
         }
     }
 }
