@@ -59,6 +59,7 @@ public class RunFarmAssistant extends TestCase {
     private static final String LOG_PATH = "log";
     private static final String CAPTCHA_LOG_PATH = "captchasolve";
     private static final String CONFIG_PATH = "Config";
+    private static final String IS_RUNNING_PATH = "IsRunning";
     private static final String LINUX32_CHROMEPATH = "chromedriver_linux32/chromedriver";
     private static final String CAPTCHA_USERNAME = "SmallJohnson";
     private static final String CAPTCHA_PASSWORD = "33333";
@@ -86,6 +87,7 @@ public class RunFarmAssistant extends TestCase {
         getUserInfo();
         service = new ChromeDriverService.Builder().usingDriverExecutable(new File(LINUX32_CHROMEPATH)).usingAnyFreePort().build();
         service.start();
+        setRunning(true);
     }
 
     @AfterClass
@@ -97,6 +99,7 @@ public class RunFarmAssistant extends TestCase {
     public void quitDriver() {
         driver.quit();
         System.out.println("[END] Session terminated!");
+        setRunning(false);
     }
     
     public void createDriver() {
@@ -120,6 +123,26 @@ public class RunFarmAssistant extends TestCase {
         } catch (IOException | ParseException e) {
             System.out.println(e.toString());
         }
+    }
+    
+    public static void setRunning(boolean isRunning){
+        FileWriter isRunningWriter = null;
+        try {
+            isRunningWriter = new FileWriter(new File(IS_RUNNING_PATH),false);
+            isRunningWriter.write((isRunning) ? "true" : "false" );
+            isRunningWriter.flush();
+        }
+        catch (IOException | NullPointerException e) {
+            System.out.println(e.toString());
+        }
+        finally
+        {
+            try {
+                isRunningWriter.close();
+            } catch (IOException e) {
+                System.out.println(e.toString());
+            }
+        } 
     }
     
     public static void generateTempFiles(){
@@ -165,6 +188,16 @@ public class RunFarmAssistant extends TestCase {
         if (!log.exists()) {
             try {
                 log.createNewFile();
+            } catch (IOException e) {
+                System.out.println(e.toString());
+            }
+        }
+        
+        File isRunning = new File(IS_RUNNING_PATH);
+
+        if (!isRunning.exists()) {
+            try {
+                isRunning.createNewFile();
             } catch (IOException e) {
                 System.out.println(e.toString());
             }
@@ -342,6 +375,11 @@ public class RunFarmAssistant extends TestCase {
 
     private void goToFarmAssistant() throws WebDriverException, ParseException {
         try{
+            WebElement overview = driver.findElements(By.className("modemenu")).get(0).findElements(By.tagName("td")).get(0)
+                    .findElements(By.tagName("a")).get(0);
+            
+            overview.click();
+            
             List<WebElement> villageNames = driver.findElements(By.className("quickedit-label"));
             
             System.out.println("[VILLAGE] List of your villages: ");
