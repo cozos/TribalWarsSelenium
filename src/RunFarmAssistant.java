@@ -93,6 +93,8 @@ public class RunFarmAssistant extends TestCase {
     @AfterClass
     public static void createAndStopService() {
         service.stop();
+        System.out.println("[END] Session terminated!");
+        setRunning(false);
     }
 
     @After
@@ -436,40 +438,84 @@ public class RunFarmAssistant extends TestCase {
     
             assertTrue(farmButtons.size() == reportList.size());
             for (int i = 0; i < farmButtons.size(); i++) {
-                List<WebElement> tdList = reportList.get(i).findElements(By.tagName("td"));
-                
-                Barb farm = new Barb(tdList.get(3).getAttribute("textContent").substring(2, 5), tdList.get(3).getAttribute("textContent").substring(6, 9));
-                String barb = farm.x + "@" + farm.y;
-                //System.out.print(barb + " ");
-                
-                boolean hasAttacked = tdList.get(3).findElements(By.tagName("img")).size() != 0;
-                boolean maxLoot = tdList.get(2).findElements(By.tagName("img")).get(0).getAttribute("src").indexOf("1.png") != -1;
-                boolean isGreen = tdList.get(1).findElements(By.tagName("img")).get(0).getAttribute("src").indexOf("green.png") != -1;
-                boolean hcMode = lightCavRemaining < yourVillageSettings.get(village).lcToKeep + lightCavToSend;
-                
-                long travelTime = (long) (Double.parseDouble(tdList.get(7).getAttribute("textContent")) * 10 * 60 * 1000);
-                long heavyTravelTime = (long) (Double.parseDouble(tdList.get(7).getAttribute("textContent")) * 11 * 60 * 1000);
-                Date currentLandingTime = new Date(travelTime + Calendar.getInstance().getTimeInMillis());
-                Date heavyCurrentLandingTime = new Date(heavyTravelTime + Calendar.getInstance().getTimeInMillis());
-                
-                if(hcMode) currentLandingTime = heavyCurrentLandingTime;
-                
-                if (isGreen) {
-                   removeWalledBarb(barb);
-                }
-                if (!isGreen) {
-                    addWalledBarb(barb);
-                    //System.out.println("==> NOPE.");
-                }
-                else if (hasAttacked) 
+                try
                 {
-                    if(getAndSetTracker(barb, currentLandingTime.getTime(), maxLoot,village))
+                    List<WebElement> tdList = reportList.get(i).findElements(By.tagName("td"));
+                    
+                    Barb farm = new Barb(tdList.get(3).getAttribute("textContent").substring(2, 5), tdList.get(3).getAttribute("textContent").substring(6, 9));
+                    String barb = farm.x + "@" + farm.y;
+                    //System.out.print(barb + " ");
+                    
+                    boolean hasAttacked = tdList.get(3).findElements(By.tagName("img")).size() != 0;
+                    // check maxLootIsEmpty
+                    boolean maxLoot = tdList.get(2).findElements(By.tagName("img")).get(0).getAttribute("src").indexOf("1.png") != -1;
+                    boolean isGreen = tdList.get(1).findElements(By.tagName("img")).get(0).getAttribute("src").indexOf("green.png") != -1;
+                    boolean hcMode = lightCavRemaining < yourVillageSettings.get(village).lcToKeep + lightCavToSend;
+                    
+                    long travelTime = (long) (Double.parseDouble(tdList.get(7).getAttribute("textContent")) * 10 * 60 * 1000);
+                    long heavyTravelTime = (long) (Double.parseDouble(tdList.get(7).getAttribute("textContent")) * 11 * 60 * 1000);
+                    Date currentLandingTime = new Date(travelTime + Calendar.getInstance().getTimeInMillis());
+                    Date heavyCurrentLandingTime = new Date(heavyTravelTime + Calendar.getInstance().getTimeInMillis());
+                    
+                    if(hcMode) currentLandingTime = heavyCurrentLandingTime;
+                    
+                    if (isGreen) {
+                       removeWalledBarb(barb);
+                    }
+                    if (!isGreen) {
+                        addWalledBarb(barb);
+                        //System.out.println("==> NOPE.");
+                    }
+                    else if (hasAttacked) 
                     {
+                        System.out.println ("[GETANDSETTRACKER_BEFORE] " + i);
+                        if(getAndSetTracker(barb, currentLandingTime.getTime(), maxLoot,village))
+                        {
+                            boolean passed = false;
+                            while (!passed) 
+                            {
+                                try 
+                                {   
+                                    System.out.println("[BEFORE CLICK TRACKER BUTTONS] i: " + i);
+                                    if(!hcMode)
+                                    {
+                                        farmButtons.get(i).click();
+                                    }
+                                    else
+                                    {
+                                        heavyFarmButtons.get(i).click();
+                                    }
+                                    passed = true;
+                                } 
+                                catch (WebDriverException e) 
+                                {
+                                    ((JavascriptExecutor) driver).executeScript("window.scrollBy(0, 30);");
+                                }
+                            }
+                            if(!hcMode)
+                            {
+                                lightCavRemaining -= lightCavToSend;
+                                System.out.println("Remaining LC: " + lightCavRemaining);
+                            }
+                            else
+                            {
+                                heavyCavRemaining -= heavyCavToSend;
+                                System.out.println("Remaining HC: " + heavyCavRemaining);
+                            }
+                            Thread.sleep(225);
+                        }
+                    } 
+                    else 
+                    {
+                        setTracker(barb, currentLandingTime.getTime());
                         boolean passed = false;
                         while (!passed) 
                         {
                             try 
-                            {   if(!hcMode)
+                            {
+                                System.out.println("[BEFORE CLICK  BUTTONS] i: " + i);
+    
+                                if (!hcMode)
                                 {
                                     farmButtons.get(i).click();
                                 }
@@ -484,61 +530,33 @@ public class RunFarmAssistant extends TestCase {
                                 ((JavascriptExecutor) driver).executeScript("window.scrollBy(0, 30);");
                             }
                         }
-                        if(!hcMode)
+                        if (!hcMode)
                         {
                             lightCavRemaining -= lightCavToSend;
-                            System.out.println("Remaining LC: " + lightCavRemaining);
+                            System.out.println(barb + " ==> SENT LC FROM [" + village + "]. LANDING DATE IS: " + currentLandingTime.toString() + ". LC = " + lightCavRemaining + ".");
                         }
                         else
                         {
                             heavyCavRemaining -= heavyCavToSend;
-                            System.out.println("Remaining HC: " + heavyCavRemaining);
+                            System.out.println(barb + " ==> SENT HC FROM [" + village + "]. LANDING DATE IS: " + currentLandingTime.toString() + ". HC = " + heavyCavRemaining + ".");
+                       
                         }
                         Thread.sleep(225);
                     }
-                } 
-                else 
-                {
-                    setTracker(barb, currentLandingTime.getTime());
-                    boolean passed = false;
-                    while (!passed) 
-                    {
-                        try 
-                        {
-                            if (!hcMode)
-                            {
-                                farmButtons.get(i).click();
-                            }
-                            else
-                            {
-                                heavyFarmButtons.get(i).click();
-                            }
-                            passed = true;
-                        } 
-                        catch (WebDriverException e) 
-                        {
-                            ((JavascriptExecutor) driver).executeScript("window.scrollBy(0, 30);");
-                        }
+                    
+                    if (lightCavRemaining < yourVillageSettings.get(village).lcToKeep + lightCavToSend &&
+                            heavyCavRemaining < yourVillageSettings.get(village).hcToKeep + heavyCavToSend ){
+                        System.out.println("[" + village + "] ran out of Cavalry at page " + ((int)pageNum+1) + ". " + lightCavRemaining + " LC remaining.");
+                        yourVillages.remove(village);
+                        break;
                     }
-                    if (!hcMode)
-                    {
-                        lightCavRemaining -= lightCavToSend;
-                        System.out.println(barb + " ==> SENT LC FROM [" + village + "]. LANDING DATE IS: " + currentLandingTime.toString() + ". LC = " + lightCavRemaining + ".");
-                    }
-                    else
-                    {
-                        heavyCavRemaining -= heavyCavToSend;
-                        System.out.println(barb + " ==> SENT HC FROM [" + village + "]. LANDING DATE IS: " + currentLandingTime.toString() + ". HC = " + heavyCavRemaining + ".");
-                   
-                    }
-                    Thread.sleep(225);
                 }
-                
-                if (lightCavRemaining < yourVillageSettings.get(village).lcToKeep + lightCavToSend &&
-                        heavyCavRemaining < yourVillageSettings.get(village).hcToKeep + heavyCavToSend ){
-                    System.out.println("[" + village + "] ran out of Cavalry at page " + ((int)pageNum+1) + ". " + lightCavRemaining + " LC remaining.");
-                    yourVillages.remove(village);
-                    break;
+                catch(IndexOutOfBoundsException e3)
+                {
+                    System.out.println("[CLICKERROR] ");
+                    e3.printStackTrace();
+                    System.out.println("[CLICKERROR] ");
+                    continue;
                 }
             }
             ((JavascriptExecutor) driver).executeScript("window.scrollTo(0, 0);");
@@ -740,7 +758,7 @@ public class RunFarmAssistant extends TestCase {
                 if(alreadyTried && botCheckImageDisplayed)
                 {
                     captchaLogger("[CAPTCHASOLVE] Solved captcha was wrong.");
-                    try 
+                   /* try 
                     {
                         if (captchaClient.report(captcha)) 
                         {
@@ -754,7 +772,7 @@ public class RunFarmAssistant extends TestCase {
                     catch (IOException | com.DeathByCaptcha.Exception e) 
                     {
                         captchaLogger("[CAPTCHASOLVE] Failed reporting incorrectly solved CAPTCHA: " + e.toString());
-                    }
+                    }*/
                     alreadyTried = false;   
                     captchaLogger("[CAPTCHASOLVE] Retrying to solve captcha...");
                 }
