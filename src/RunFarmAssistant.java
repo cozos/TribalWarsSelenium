@@ -447,8 +447,11 @@ public class RunFarmAssistant extends TestCase {
                     //System.out.print(barb + " ");
                     
                     boolean hasAttacked = tdList.get(3).findElements(By.tagName("img")).size() != 0;
-                    // check maxLootIsEmpty
-                    boolean maxLoot = tdList.get(2).findElements(By.tagName("img")).get(0).getAttribute("src").indexOf("1.png") != -1;
+                    boolean maxLoot = false;
+                    if(!tdList.get(2).findElements(By.tagName("img")).isEmpty())
+                    {
+                    maxLoot = tdList.get(2).findElements(By.tagName("img")).get(0).getAttribute("src").indexOf("1.png") != -1;
+                    }
                     boolean isGreen = tdList.get(1).findElements(By.tagName("img")).get(0).getAttribute("src").indexOf("green.png") != -1;
                     boolean hcMode = lightCavRemaining < yourVillageSettings.get(village).lcToKeep + lightCavToSend;
                     
@@ -468,7 +471,6 @@ public class RunFarmAssistant extends TestCase {
                     }
                     else if (hasAttacked) 
                     {
-                        System.out.println ("[GETANDSETTRACKER_BEFORE] " + i);
                         if(getAndSetTracker(barb, currentLandingTime.getTime(), maxLoot,village))
                         {
                             boolean passed = false;
@@ -476,7 +478,6 @@ public class RunFarmAssistant extends TestCase {
                             {
                                 try 
                                 {   
-                                    System.out.println("[BEFORE CLICK TRACKER BUTTONS] i: " + i);
                                     if(!hcMode)
                                     {
                                         farmButtons.get(i).click();
@@ -512,9 +513,7 @@ public class RunFarmAssistant extends TestCase {
                         while (!passed) 
                         {
                             try 
-                            {
-                                System.out.println("[BEFORE CLICK  BUTTONS] i: " + i);
-    
+                            {    
                                 if (!hcMode)
                                 {
                                     farmButtons.get(i).click();
