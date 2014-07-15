@@ -2,6 +2,7 @@ import java.awt.image.BufferedImage;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
@@ -22,10 +23,6 @@ import javax.imageio.ImageIO;
 
 import junit.framework.TestCase;
 
-import org.json.simple.JSONArray;
-import org.json.simple.JSONObject;
-import org.json.simple.parser.JSONParser;
-import org.json.simple.parser.ParseException;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -52,6 +49,14 @@ import org.openqa.selenium.support.ui.WebDriverWait;
 import com.DeathByCaptcha.Captcha;
 import com.DeathByCaptcha.Client;
 import com.DeathByCaptcha.SocketClient;
+import com.google.gson.Gson;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonIOException;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
+import com.google.gson.JsonSyntaxException;
+import com.google.gson.reflect.TypeToken;
 
 @SuppressWarnings("unused")
 @RunWith(JUnit4.class)
@@ -81,8 +86,8 @@ public class RunFarmAssistant extends TestCase {
     private static ChromeDriverService service;
     private WebDriver driver;
     private WebDriverWait wait;
-    private JSONObject trackedBarbs;
-    private JSONObject walledBarbs;
+    private JsonObject trackedBarbs;
+    private JsonObject walledBarbs;
     private static final List<String> yourVillages = new CopyOnWriteArrayList<String>();
     private static final Map<String,VillageSettings> yourVillageSettings = new HashMap<String,VillageSettings>();
     
@@ -115,21 +120,25 @@ public class RunFarmAssistant extends TestCase {
     }
     
     public static void getUserInfo() {
-        JSONParser parser = new JSONParser();
-        try {
-            Object obj = parser.parse(new FileReader(CONFIG_PATH));
-            JSONObject jsonObject = (JSONObject) obj;
+        JsonParser parser = new JsonParser();
 
-            USERNAME = (String) jsonObject.get("username");
-            PASSWORD = (String) jsonObject.get("password");
-            EMAIL = (String) jsonObject.get("email");
-            HOURS_BETWEEN_ATTACKS = (long)(Double.parseDouble((String) jsonObject.get("hoursBetweenAttacks")) * MILLISECONDS_IN_HOUR);
-            HOURS_BETWEEN_FARMING_RUNS = (long)(Double.parseDouble((String) jsonObject.get("hoursBetweenFarmingRuns")) * MILLISECONDS_IN_HOUR);
-            HOURS_BETWEEN_ATTACKS_IF_MAX_LOOTED = (long)(Double.parseDouble((String) jsonObject.get("hoursBetweenAttacksIfMaxLooted")) * MILLISECONDS_IN_HOUR);
-            HOURS_MAX_LOOT_VALID = (long)(Double.parseDouble((String) jsonObject.get("hoursMaxLootValid")) * MILLISECONDS_IN_HOUR);
-        } catch (IOException | ParseException e) {
-            e.printStackTrace();
-        }
+            Object obj = null;
+            try {
+                obj = parser.parse(new FileReader(CONFIG_PATH));
+            } catch (JsonIOException | JsonSyntaxException | FileNotFoundException e) {
+                e.printStackTrace();
+            }
+            
+            JsonObject jsonObject = (JsonObject) obj;
+
+            USERNAME = jsonObject.get("username").getAsString();
+            PASSWORD = jsonObject.get("password").getAsString();
+            EMAIL = jsonObject.get("email").getAsString();
+            HOURS_BETWEEN_ATTACKS = (long)(Double.parseDouble(jsonObject.get("hoursBetweenAttacks").getAsString()) * MILLISECONDS_IN_HOUR);
+            HOURS_BETWEEN_FARMING_RUNS = (long)(Double.parseDouble(jsonObject.get("hoursBetweenFarmingRuns").getAsString()) * MILLISECONDS_IN_HOUR);
+            HOURS_BETWEEN_ATTACKS_IF_MAX_LOOTED = (long)(Double.parseDouble(jsonObject.get("hoursBetweenAttacksIfMaxLooted").getAsString()) * MILLISECONDS_IN_HOUR);
+            HOURS_MAX_LOOT_VALID = (long)(Double.parseDouble(jsonObject.get("hoursMaxLootValid").getAsString()) * MILLISECONDS_IN_HOUR);
+    
     }
     
     public static void setRunning(boolean isRunning){
@@ -211,23 +220,23 @@ public class RunFarmAssistant extends TestCase {
         }
     }
         
-    public void openJSON() throws IOException, ParseException{
+    public void openJSON() throws IOException{
         if(new File(BARB_TRACKER_PATH).length() != 0)
         {
-            trackedBarbs = (JSONObject) new JSONParser().parse(new FileReader(BARB_TRACKER_PATH));
+            trackedBarbs = (JsonObject) new JsonParser().parse(new FileReader(BARB_TRACKER_PATH));
         }
         else
         {
-            trackedBarbs = new JSONObject();
+            trackedBarbs = new JsonObject();
         }
         
         if(new File(WALLED_BARBS_PATH).length() != 0)
         {
-            walledBarbs = (JSONObject) new JSONParser().parse(new FileReader(WALLED_BARBS_PATH));
+            walledBarbs = (JsonObject) new JsonParser().parse(new FileReader(WALLED_BARBS_PATH));
         }
         else
         {
-            walledBarbs = new JSONObject();
+            walledBarbs = new JsonObject();
         }
     }
     
@@ -236,7 +245,7 @@ public class RunFarmAssistant extends TestCase {
         try {
             trackerWriter = new FileWriter(new File(BARB_TRACKER_PATH));
             if(trackedBarbs == null) throw new NullPointerException();
-            trackerWriter.write(trackedBarbs.toJSONString());
+            trackerWriter.write(trackedBarbs.getAsString());
             trackerWriter.flush();
         } catch (IOException | NullPointerException e) {
             e.printStackTrace();
@@ -254,7 +263,7 @@ public class RunFarmAssistant extends TestCase {
         try {
             walledBarbWriter = new FileWriter(new File(WALLED_BARBS_PATH));
             if(walledBarbs == null) throw new NullPointerException();
-            walledBarbWriter.write(walledBarbs.toJSONString());
+            walledBarbWriter.write(walledBarbs.getAsString());
             walledBarbWriter.flush();
         } catch (IOException | NullPointerException e) {
             e.printStackTrace();
@@ -269,38 +278,43 @@ public class RunFarmAssistant extends TestCase {
         } 
     }
     
-    @SuppressWarnings("unchecked")
     public void setTracker(String coordinates, Long arrivalTime) {
-        JSONArray landingScheduleJSON = new JSONArray();
-        if(trackedBarbs.containsKey(coordinates))
+        JsonArray landingScheduleJSON = new JsonArray();
+        if(trackedBarbs.has(coordinates))
         {
-            landingScheduleJSON = (JSONArray) trackedBarbs.get(coordinates);
+            landingScheduleJSON = trackedBarbs.get(coordinates).getAsJsonArray();
         }
         
         TreeSet<Long> landingScheduleArray = new TreeSet<Long>();
         
         for (int i = 0; i < landingScheduleJSON.size(); i++) {
-            landingScheduleArray.add((Long)landingScheduleJSON.get(i));
+            landingScheduleArray.add(landingScheduleJSON.get(i).getAsLong());
         }
         
         Long mostRecentFinishedAttack = (landingScheduleArray.lower(new Date().getTime()) != null) ? landingScheduleArray
                 .lower(new Date().getTime()) : new Date().getTime();
                 
-        trackedBarbs.put(coordinates, new org.json.JSONArray(landingScheduleArray.tailSet(mostRecentFinishedAttack)));
+        landingScheduleArray.add(arrivalTime);
+        
+        Gson gson = new Gson();
+        JsonElement landingScheduleElement = gson.toJsonTree(landingScheduleArray.tailSet(mostRecentFinishedAttack), new TypeToken<TreeSet<Long>>() {}.getType());
+        
+        trackedBarbs.add(coordinates, landingScheduleElement );
     }
 
-    @SuppressWarnings("unchecked")
-    public boolean getAndSetTracker(String coordinates, Long newArrivalTime,boolean maxLoot, String village){
-        if(!trackedBarbs.containsKey(coordinates))
+    public boolean getAndSetTracker(String coordinates, Long newArrivalTime,boolean maxLoot, String village)
+    {
+        if(!trackedBarbs.has(coordinates))
         {
             return false;
         }
         
-        JSONArray landingScheduleJSON = (JSONArray)trackedBarbs.get(coordinates);
+        JsonArray landingScheduleJSON = trackedBarbs.get(coordinates).getAsJsonArray();
+        
         TreeSet<Long> landingScheduleSet = new TreeSet<Long>();
         
         for (int i = 0; i < landingScheduleJSON.size(); i++) {
-            landingScheduleSet.add((Long)landingScheduleJSON.get(i));
+            landingScheduleSet.add(landingScheduleJSON.get(i).getAsLong());
         }
         
         Long mostRecentFinishedAttack = (landingScheduleSet.lower(new Date().getTime()) != null) ? landingScheduleSet
@@ -321,7 +335,7 @@ public class RunFarmAssistant extends TestCase {
         }
         catch (IndexOutOfBoundsException e)
         {
-            beforeLandingTime = new Long(0);
+            beforeLandingTime = new Long(-1);
         }
         
         // Get time gap between current attack and the next attack, if there are any
@@ -332,14 +346,24 @@ public class RunFarmAssistant extends TestCase {
         }
         catch (IndexOutOfBoundsException e)
         {
-            afterLandingTime = new Long(0);
+            afterLandingTime = new Long(-1);
         }
         
         //
         Long landingTimeGap = Math.max(beforeLandingTime,afterLandingTime);
-
+        Gson gson = new Gson();
+        JsonElement landingScheduleElement = gson.toJsonTree(landingScheduleArray, new TypeToken<TreeSet<Long>>() {}.getType());
+        
+        
+        //Can't find other attacks
+        if(landingTimeGap == -1)
+        {
+            System.out.print(coordinates + " ==> SCHEDULED ATTACK FROM [" + village + "]. No other attacks on record.");
+            trackedBarbs.add(coordinates, landingScheduleElement);
+            return true;
+        }
         // If full haul
-        if (maxLoot && landingTimeGap > HOURS_BETWEEN_ATTACKS_IF_MAX_LOOTED
+        else if (maxLoot && landingTimeGap > HOURS_BETWEEN_ATTACKS_IF_MAX_LOOTED
                 && (new Date().getTime() - mostRecentFinishedAttack) < HOURS_MAX_LOOT_VALID) 
         {
             System.out.print(coordinates + " ==> MAX LOOT ATTACK FROM [" + village + "]. Max landing time gap is: "
@@ -347,9 +371,9 @@ public class RunFarmAssistant extends TestCase {
                     + " Hours IS GREATER THAN WHAT YOU SET WHEN MAX LOOTED: "
                     + (double) Math.round((double) HOURS_BETWEEN_ATTACKS_IF_MAX_LOOTED / MILLISECONDS_IN_HOUR * 100) / 100
                     + " Hours. Time of max loot was "
-                    + (double) Math.round((double) mostRecentFinishedAttack / MILLISECONDS_IN_HOUR * 100) / 100
+                    + (double) Math.round((double) (new Date().getTime()- mostRecentFinishedAttack) / MILLISECONDS_IN_HOUR * 100) / 100
                     + " hours ago. ");
-            trackedBarbs.put(coordinates, landingScheduleArray);
+            trackedBarbs.add(coordinates, landingScheduleElement);
             return true;
         }
         // If not full haul, but can schedule in a farming attack
@@ -359,7 +383,7 @@ public class RunFarmAssistant extends TestCase {
                     + (double) Math.round((double) landingTimeGap / MILLISECONDS_IN_HOUR * 100) / 100
                     + " Hours IS GREATER THAN WHAT YOU SET: "
                     + (double) Math.round((double) HOURS_BETWEEN_ATTACKS / MILLISECONDS_IN_HOUR * 100) / 100 + " Hours. ");
-            trackedBarbs.put(coordinates, landingScheduleArray);
+            trackedBarbs.add(coordinates, landingScheduleElement);
             return true;
         }
         else
@@ -368,9 +392,8 @@ public class RunFarmAssistant extends TestCase {
         }
     }
     
-    @SuppressWarnings("unchecked")
     public void addWalledBarb(String coordinates){
-        walledBarbs.put(coordinates, Calendar.getInstance().getTime());
+        walledBarbs.addProperty(coordinates, Calendar.getInstance().getTimeInMillis());
     }
     
     public void removeWalledBarb(String coordinates){
@@ -378,7 +401,7 @@ public class RunFarmAssistant extends TestCase {
     }
     
     public boolean checkIfWalled(String coordinates){
-        return walledBarbs.containsKey(coordinates);
+        return walledBarbs.has(coordinates);
     }
 
     private void login() throws WebDriverException, NoSuchElementException {
@@ -397,7 +420,7 @@ public class RunFarmAssistant extends TestCase {
         
     }
     
-    private void getSettings() throws ParseException {
+    private void getSettings() {
         WebElement villageLink = driver.findElement(By.id("menu_row2_village")).findElements(By.tagName("a")).get(0);
 
         villageLink.click();
@@ -406,12 +429,12 @@ public class RunFarmAssistant extends TestCase {
         WebElement note = driver.findElement(By.id("village_note"));
 
         String jsonString = note.getAttribute("textContent");
-        JSONObject jsonSettings = (JSONObject) new JSONParser().parse(jsonString);
+        JsonObject jsonSettings = new JsonParser().parse(jsonString).getAsJsonObject();
 
         for (int i = 0; i < yourVillages.size(); i++) {
             int villageNum = i + 1;
-            VillageSettings settings = new VillageSettings(Integer.parseInt((String) jsonSettings.get(villageNum + "LC")),
-                    Integer.parseInt((String) jsonSettings.get(villageNum + "HC")));
+            VillageSettings settings = new VillageSettings(Integer.parseInt(jsonSettings.get(villageNum + "LC").getAsString()),
+                    Integer.parseInt(jsonSettings.get(villageNum + "HC").getAsString()));
             System.out.println("[SETTINGS] LC TO KEEP: " + jsonSettings.get(villageNum + "LC") + ", HC TO KEEP:"
                     + jsonSettings.get(villageNum + "HC") + " in [" + yourVillages.get(i) + "]");
             yourVillageSettings.put(yourVillages.get(i), settings);
@@ -429,7 +452,7 @@ public class RunFarmAssistant extends TestCase {
         }
     }
 
-    private void goToFarmAssistant() throws WebDriverException, ParseException {
+    private void goToFarmAssistant() throws WebDriverException{
         try{
             WebElement overview = driver.findElements(By.className("modemenu")).get(0).findElements(By.tagName("td")).get(0)
                     .findElements(By.tagName("a")).get(0);
@@ -624,7 +647,7 @@ public class RunFarmAssistant extends TestCase {
         }
     }
 
-    private void doFarmAssistant() throws InterruptedException, WebDriverException, NullPointerException {
+    private void doFarmAssistant() throws InterruptedException, WebDriverException, NullPointerException{
         
         int firstPageNum = Integer.parseInt(driver.findElements(By.tagName("Strong")).get(0).getAttribute("textContent").substring(2, 3)) - 1;
         int numPages = driver.findElements(By.className("paged-nav-item")).size();
