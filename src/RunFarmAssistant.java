@@ -6,18 +6,23 @@ import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.SortedSet;
 import java.util.TimeZone;
+import java.util.TreeSet;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 import javax.imageio.ImageIO;
 
 import junit.framework.TestCase;
 
+import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
 import org.json.simple.parser.ParseException;
@@ -47,7 +52,6 @@ import org.openqa.selenium.support.ui.WebDriverWait;
 import com.DeathByCaptcha.Captcha;
 import com.DeathByCaptcha.Client;
 import com.DeathByCaptcha.SocketClient;
-import com.sun.corba.se.impl.orbutil.ObjectWriter;
 
 @SuppressWarnings("unused")
 @RunWith(JUnit4.class)
@@ -209,20 +213,20 @@ public class RunFarmAssistant extends TestCase {
     public void openJSON() throws IOException, ParseException{
         if(new File(BARB_TRACKER_PATH).length() != 0)
         {
-            setTrackedBarbs((JSONObject) new JSONParser().parse(new FileReader(BARB_TRACKER_PATH)));
+            trackedBarbs = (JSONObject) new JSONParser().parse(new FileReader(BARB_TRACKER_PATH));
         }
         else
         {
-            setTrackedBarbs(new JSONObject());
+            trackedBarbs = new JSONObject();
         }
         
         if(new File(WALLED_BARBS_PATH).length() != 0)
         {
-        setWalledBarbs((JSONObject) new JSONParser().parse(new FileReader(WALLED_BARBS_PATH)));
+            walledBarbs = (JSONObject) new JSONParser().parse(new FileReader(WALLED_BARBS_PATH));
         }
         else
         {
-            setWalledBarbs(new JSONObject());
+            walledBarbs = new JSONObject();
         }
     }
     
@@ -230,8 +234,8 @@ public class RunFarmAssistant extends TestCase {
         FileWriter trackerWriter = null;
         try {
             trackerWriter = new FileWriter(new File(BARB_TRACKER_PATH));
-            if(getTrackedBarbs() == null) throw new NullPointerException();
-            trackerWriter.write(getTrackedBarbs().toJSONString());
+            if(trackedBarbs == null) throw new NullPointerException();
+            trackerWriter.write(trackedBarbs.toJSONString());
             trackerWriter.flush();
         } catch (IOException | NullPointerException e) {
             System.out.println(e.toString());
@@ -242,14 +246,14 @@ public class RunFarmAssistant extends TestCase {
             } catch (IOException e) {
                 System.out.println(e.toString());
             }
-            setTrackedBarbs(null);
+            trackedBarbs = null;
         } 
         
         FileWriter walledBarbWriter = null;
         try {
             walledBarbWriter = new FileWriter(new File(WALLED_BARBS_PATH));
-            if(getWalledBarbs() == null) throw new NullPointerException();
-            walledBarbWriter.write(getWalledBarbs().toJSONString());
+            if(walledBarbs == null) throw new NullPointerException();
+            walledBarbWriter.write(walledBarbs.toJSONString());
             walledBarbWriter.flush();
         } catch (IOException | NullPointerException e) {
             System.out.println(e.toString());
@@ -260,71 +264,120 @@ public class RunFarmAssistant extends TestCase {
             } catch (IOException e) {
                 System.out.println(e.toString());
             }
-            setWalledBarbs(null);
+            walledBarbs = null;
         } 
     }
     
     @SuppressWarnings("unchecked")
     public void setTracker(String coordinates, Long arrivalTime) {
-        getTrackedBarbs().put(coordinates, arrivalTime);
+        JSONArray landingScheduleJSON = new JSONArray();
+        if(trackedBarbs.containsKey(coordinates))
+        {
+            landingScheduleJSON = (JSONArray) trackedBarbs.get(coordinates);
+        }
+        
+        TreeSet<Long> landingScheduleArray = new TreeSet<Long>();
+        
+        for (int i = 0; i < landingScheduleJSON.size(); i++) {
+            landingScheduleArray.add((Long)landingScheduleJSON.get(i));
+        }
+        
+        Long mostRecentFinishedAttack = (landingScheduleArray.lower(new Date().getTime()) != null) ? landingScheduleArray
+                .lower(new Date().getTime()) : new Date().getTime();
+                
+        trackedBarbs.put(coordinates, new org.json.JSONArray(landingScheduleArray.tailSet(mostRecentFinishedAttack)));
     }
 
     @SuppressWarnings("unchecked")
     public boolean getAndSetTracker(String coordinates, Long newArrivalTime,boolean maxLoot, String village){
-        if(!getTrackedBarbs().containsKey(coordinates))
+        if(!trackedBarbs.containsKey(coordinates))
         {
             return false;
         }
         
-        Long oldArrivalTime = new Long(0);
-        if(getTrackedBarbs().containsKey(coordinates+"_oldArrivalTime")){
-            oldArrivalTime = (Long) getTrackedBarbs().get(coordinates+"_oldArrivalTime");
+        JSONArray landingScheduleJSON = (JSONArray)trackedBarbs.get(coordinates);
+        TreeSet<Long> landingScheduleSet = new TreeSet<Long>();
+        
+        for (int i = 0; i < landingScheduleJSON.size(); i++) {
+            landingScheduleSet.add((Long)landingScheduleJSON.get(i));
         }
         
-        Long currentTime = Calendar.getInstance().getTimeInMillis();
-       
-        Long previousNewArrivalTime = (Long) getTrackedBarbs().get(coordinates);
+        Long mostRecentFinishedAttack = (landingScheduleSet.lower(new Date().getTime()) != null) ? landingScheduleSet
+                .lower(new Date().getTime()) : new Date().getTime();
+                
+        landingScheduleSet = (TreeSet<Long>) landingScheduleSet.tailSet(mostRecentFinishedAttack);
+        landingScheduleSet.add(newArrivalTime);
         
-        // Full Haul Optimization
-        if (maxLoot && (currentTime - oldArrivalTime < HOURS_BETWEEN_ATTACKS*2)
-                && (newArrivalTime - previousNewArrivalTime > HOURS_BETWEEN_ATTACKS_IF_MAX_LOOTED)) 
+        ArrayList<Long> landingScheduleArray = new ArrayList<Long>(landingScheduleSet);
+        
+        int arrivalTimeIndex = landingScheduleArray.indexOf(newArrivalTime);
+        
+        // Get time gap between current attack and the latest previous in-transit attack, if there are any
+        Long beforeLandingTime = new Long(0);
+        try
         {
-            System.out.print(coordinates + " ==> ATTACKED FROM [" + village + "] BECAUSE MAX LOOT. DIFFERENCE: "
-                    + (double) Math.round((double) (newArrivalTime - previousNewArrivalTime) / MILLISECONDS_IN_HOUR * 100) / 100
+            beforeLandingTime = newArrivalTime - landingScheduleArray.get(arrivalTimeIndex - 1);
+        }
+        catch (IndexOutOfBoundsException e)
+        {
+            beforeLandingTime = new Long(0);
+        }
+        
+        // Get time gap between current attack and the next attack, if there are any
+        Long afterLandingTime = new Long(0);
+        try
+        {
+            afterLandingTime = landingScheduleArray.get(arrivalTimeIndex + 1) - newArrivalTime;
+        }
+        catch (IndexOutOfBoundsException e)
+        {
+            afterLandingTime = new Long(0);
+        }
+        
+        //
+        Long landingTimeGap = Math.max(beforeLandingTime,afterLandingTime);
+
+        // If full haul
+        if (maxLoot && landingTimeGap > HOURS_BETWEEN_ATTACKS_IF_MAX_LOOTED
+                && (new Date().getTime() - mostRecentFinishedAttack) < (HOURS_BETWEEN_ATTACKS_IF_MAX_LOOTED * 2)) 
+        {
+            System.out.print(coordinates + " ==> MAX LOOT ATTACK FROM [" + village + "]. Max landing time gap is: "
+                    + (double) Math.round((double) landingTimeGap / MILLISECONDS_IN_HOUR * 100) / 100
                     + " Hours IS GREATER THAN WHAT YOU SET WHEN MAX LOOTED: "
                     + (double) Math.round((double) HOURS_BETWEEN_ATTACKS_IF_MAX_LOOTED / MILLISECONDS_IN_HOUR * 100) / 100
                     + " Hours. Time of max loot was "
-                    + (double) Math.round((double) (currentTime - oldArrivalTime) / MILLISECONDS_IN_HOUR * 100) / 100
+                    + (double) Math.round((double) mostRecentFinishedAttack / MILLISECONDS_IN_HOUR * 100) / 100
                     + " hours ago. ");
-            getTrackedBarbs().put(coordinates, newArrivalTime);
-            getTrackedBarbs().put(coordinates + "_oldArrivalTime", previousNewArrivalTime);
+            trackedBarbs.put(coordinates, landingScheduleArray);
             return true;
-        } 
-        else if (newArrivalTime - previousNewArrivalTime > HOURS_BETWEEN_ATTACKS) 
+        }
+        // If not full haul, but can schedule in a farming attack
+        else if (landingTimeGap > HOURS_BETWEEN_ATTACKS)
         {
-            System.out.print(coordinates + " ==> ATTACKED FROM [" + village + "]. DIFFERENCE: "
-                    + (double) Math.round((double) (newArrivalTime - previousNewArrivalTime) / MILLISECONDS_IN_HOUR * 100) / 100
+            System.out.print(coordinates + " ==> SCHEDULED ATTACK FROM [" + village + "]. Max landing time gap is: "
+                    + (double) Math.round((double) landingTimeGap / MILLISECONDS_IN_HOUR * 100) / 100
                     + " Hours IS GREATER THAN WHAT YOU SET: "
                     + (double) Math.round((double) HOURS_BETWEEN_ATTACKS / MILLISECONDS_IN_HOUR * 100) / 100 + " Hours. ");
-            getTrackedBarbs().put(coordinates, newArrivalTime);
-            getTrackedBarbs().put(coordinates + "_oldArrivalTime", previousNewArrivalTime);
+            trackedBarbs.put(coordinates, landingScheduleArray);
             return true;
-        } else {
+        }
+        else
+        {
             return false;
         }
     }
     
     @SuppressWarnings("unchecked")
     public void addWalledBarb(String coordinates){
-        getWalledBarbs().put(coordinates, Calendar.getInstance().getTime());
+        walledBarbs.put(coordinates, Calendar.getInstance().getTime());
     }
     
     public void removeWalledBarb(String coordinates){
-        getWalledBarbs().remove(coordinates);
+        walledBarbs.remove(coordinates);
     }
     
     public boolean checkIfWalled(String coordinates){
-        return getWalledBarbs().containsKey(coordinates);
+        return walledBarbs.containsKey(coordinates);
     }
 
     private void login() throws WebDriverException, NoSuchElementException {
@@ -544,8 +597,10 @@ public class RunFarmAssistant extends TestCase {
                     }
                     
                     if (lightCavRemaining < yourVillageSettings.get(village).lcToKeep + lightCavToSend &&
-                            heavyCavRemaining < yourVillageSettings.get(village).hcToKeep + heavyCavToSend ){
-                        System.out.println("[" + village + "] ran out of Cavalry at page " + ((int)pageNum+1) + ". " + lightCavRemaining + " LC remaining.");
+                            heavyCavRemaining < yourVillageSettings.get(village).hcToKeep + heavyCavToSend )
+                    {
+                        System.out.println("[" + village + "] ran out of Cavalry at page " + ((int) pageNum + 1) + ". "
+                                + lightCavRemaining + " LC remaining. " + heavyCavRemaining + " HC remaining.");
                         yourVillages.remove(village);
                         break;
                     }
@@ -696,22 +751,6 @@ public class RunFarmAssistant extends TestCase {
         };
         WebDriverWait wait = new WebDriverWait(driver, 30);
         wait.until(pageLoadCondition);
-    }
-
-    public JSONObject getTrackedBarbs() {
-        return trackedBarbs;
-    }
-
-    public void setTrackedBarbs(JSONObject trackedBarbs) {
-        this.trackedBarbs = trackedBarbs;
-    }
-
-    public JSONObject getWalledBarbs() {
-        return walledBarbs;
-    }
-
-    public void setWalledBarbs(JSONObject walledBarbs) {
-        this.walledBarbs = walledBarbs;
     }
     
     private void captchaLogger(String logString){

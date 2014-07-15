@@ -2,7 +2,7 @@
 "username": "ShittyUsername",
 "password": "ShittyPassword",
 "email": "ShittyEmail@ShitWebsite.com"
-"hoursBetweenAttacks": "1.5"
-"hoursBetweenAttacksIfMaxLooted": "0.5"
-"hoursBetweenFarmingRuns": "0.10"
+"hoursBetweenAttacks": "0.75"
+"hoursBetweenAttacksIfMaxLooted": "0.25"
+"hoursBetweenFarmingRuns": "0.20"
 }
