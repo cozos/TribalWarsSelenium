@@ -318,7 +318,7 @@ public class RunFarmAssistant extends TestCase {
         }
         
         Long mostRecentFinishedAttack = (landingScheduleSet.lower(new Date().getTime()) != null) ? landingScheduleSet
-                .lower(new Date().getTime()) : new Date().getTime();
+                .lower(new Date().getTime()) : new Date(0).getTime();
                 
         landingScheduleSet = (TreeSet<Long>) landingScheduleSet.tailSet(mostRecentFinishedAttack);
         landingScheduleSet.add(newArrivalTime);
