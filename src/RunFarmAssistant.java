@@ -245,7 +245,7 @@ public class RunFarmAssistant extends TestCase {
         try {
             trackerWriter = new FileWriter(new File(BARB_TRACKER_PATH));
             if(trackedBarbs == null) throw new NullPointerException();
-            trackerWriter.write(trackedBarbs.getAsString());
+            trackerWriter.write(trackedBarbs.toString());
             trackerWriter.flush();
         } catch (IOException | NullPointerException e) {
             e.printStackTrace();
@@ -263,7 +263,7 @@ public class RunFarmAssistant extends TestCase {
         try {
             walledBarbWriter = new FileWriter(new File(WALLED_BARBS_PATH));
             if(walledBarbs == null) throw new NullPointerException();
-            walledBarbWriter.write(walledBarbs.getAsString());
+            walledBarbWriter.write(walledBarbs.toString());
             walledBarbWriter.flush();
         } catch (IOException | NullPointerException e) {
             e.printStackTrace();
@@ -366,7 +366,7 @@ public class RunFarmAssistant extends TestCase {
         else if (maxLoot && landingTimeGap > HOURS_BETWEEN_ATTACKS_IF_MAX_LOOTED
                 && (new Date().getTime() - mostRecentFinishedAttack) < HOURS_MAX_LOOT_VALID) 
         {
-            System.out.print(coordinates + " ==> MAX LOOT ATTACK FROM [" + village + "]. Max landing time gap is: "
+            System.out.print(coordinates + " ==> MAXLOOT ATTACK FROM [" + village + "]. Max landing time gap is: "
                     + (double) Math.round((double) landingTimeGap / MILLISECONDS_IN_HOUR * 100) / 100
                     + " Hours IS GREATER THAN WHAT YOU SET WHEN MAX LOOTED: "
                     + (double) Math.round((double) HOURS_BETWEEN_ATTACKS_IF_MAX_LOOTED / MILLISECONDS_IN_HOUR * 100) / 100
