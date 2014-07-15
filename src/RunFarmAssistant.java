@@ -75,6 +75,7 @@ public class RunFarmAssistant extends TestCase {
     private static String EMAIL;
     private static long HOURS_BETWEEN_ATTACKS;
     private static long HOURS_BETWEEN_ATTACKS_IF_MAX_LOOTED;
+    private static long HOURS_MAX_LOOT_VALID;
     private static long HOURS_BETWEEN_FARMING_RUNS;
 
     private static ChromeDriverService service;
@@ -125,9 +126,9 @@ public class RunFarmAssistant extends TestCase {
             HOURS_BETWEEN_ATTACKS = (long)(Double.parseDouble((String) jsonObject.get("hoursBetweenAttacks")) * MILLISECONDS_IN_HOUR);
             HOURS_BETWEEN_FARMING_RUNS = (long)(Double.parseDouble((String) jsonObject.get("hoursBetweenFarmingRuns")) * MILLISECONDS_IN_HOUR);
             HOURS_BETWEEN_ATTACKS_IF_MAX_LOOTED = (long)(Double.parseDouble((String) jsonObject.get("hoursBetweenAttacksIfMaxLooted")) * MILLISECONDS_IN_HOUR);
-            
+            HOURS_MAX_LOOT_VALID = (long)(Double.parseDouble((String) jsonObject.get("hoursMaxLootValid")) * MILLISECONDS_IN_HOUR);
         } catch (IOException | ParseException e) {
-            System.out.println(e.toString());
+            e.printStackTrace();
         }
     }
     
@@ -139,14 +140,14 @@ public class RunFarmAssistant extends TestCase {
             isRunningWriter.flush();
         }
         catch (IOException | NullPointerException e) {
-            System.out.println(e.toString());
+            e.printStackTrace();
         }
         finally
         {
             try {
                 isRunningWriter.close();
             } catch (IOException e) {
-                System.out.println(e.toString());
+                e.printStackTrace();
             }
         } 
     }
@@ -164,7 +165,7 @@ public class RunFarmAssistant extends TestCase {
             try {
                 barbTracker.createNewFile();
             } catch (IOException e) {
-                System.out.println(e.toString());
+                e.printStackTrace();
             }
         }
         
@@ -174,7 +175,7 @@ public class RunFarmAssistant extends TestCase {
             try {
                 walledBarbs.createNewFile();
             } catch (IOException e) {
-                System.out.println(e.toString());
+                e.printStackTrace();
             }
         }
         
@@ -185,7 +186,7 @@ public class RunFarmAssistant extends TestCase {
             try {
                 captchaLog.createNewFile();
             } catch (IOException e) {
-                System.out.println(e.toString());
+                e.printStackTrace();
             }
         }
         
@@ -195,7 +196,7 @@ public class RunFarmAssistant extends TestCase {
             try {
                 log.createNewFile();
             } catch (IOException e) {
-                System.out.println(e.toString());
+                e.printStackTrace();
             }
         }
         
@@ -205,7 +206,7 @@ public class RunFarmAssistant extends TestCase {
             try {
                 isRunning.createNewFile();
             } catch (IOException e) {
-                System.out.println(e.toString());
+                e.printStackTrace();
             }
         }
     }
@@ -238,13 +239,13 @@ public class RunFarmAssistant extends TestCase {
             trackerWriter.write(trackedBarbs.toJSONString());
             trackerWriter.flush();
         } catch (IOException | NullPointerException e) {
-            System.out.println(e.toString());
+            e.printStackTrace();
         }
         finally{
             try {
                 trackerWriter.close();
             } catch (IOException e) {
-                System.out.println(e.toString());
+                e.printStackTrace();
             }
             trackedBarbs = null;
         } 
@@ -256,13 +257,13 @@ public class RunFarmAssistant extends TestCase {
             walledBarbWriter.write(walledBarbs.toJSONString());
             walledBarbWriter.flush();
         } catch (IOException | NullPointerException e) {
-            System.out.println(e.toString());
+            e.printStackTrace();
         }
         finally{
             try {
                 walledBarbWriter.close();
             } catch (IOException e) {
-                System.out.println(e.toString());
+                e.printStackTrace();
             }
             walledBarbs = null;
         } 
@@ -339,7 +340,7 @@ public class RunFarmAssistant extends TestCase {
 
         // If full haul
         if (maxLoot && landingTimeGap > HOURS_BETWEEN_ATTACKS_IF_MAX_LOOTED
-                && (new Date().getTime() - mostRecentFinishedAttack) < (HOURS_BETWEEN_ATTACKS_IF_MAX_LOOTED * 2)) 
+                && (new Date().getTime() - mostRecentFinishedAttack) < HOURS_MAX_LOOT_VALID) 
         {
             System.out.print(coordinates + " ==> MAX LOOT ATTACK FROM [" + village + "]. Max landing time gap is: "
                     + (double) Math.round((double) landingTimeGap / MILLISECONDS_IN_HOUR * 100) / 100
@@ -727,7 +728,7 @@ public class RunFarmAssistant extends TestCase {
             catch (Exception e ) 
             {
                 System.out.println("[FAILED] Something fucked up.");
-                System.out.println(e.toString());
+                e.printStackTrace();
                 System.out.println("[FAILED] Try again");
                 continue;
             } 

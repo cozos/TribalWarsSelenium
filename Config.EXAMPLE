@@ -3,6 +3,7 @@
 "password": "ShittyPassword",
 "email": "ShittyEmail@ShitWebsite.com"
 "hoursBetweenAttacks": "0.75"
-"hoursBetweenAttacksIfMaxLooted": "0.25"
+"hoursBetweenAttacksIfMaxLooted": "0.15"
+"hoursMaxLootValid": "0.5"
 "hoursBetweenFarmingRuns": "0.20"
 }
